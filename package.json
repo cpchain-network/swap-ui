@@ -1,0 +1,37 @@
+{
+  "name": "wagmi-project",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "biome check .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tanstack/vue-query": ">=5.45.0",
+    "@uniswap/sdk-core": "^7.7.2",
+    "@uniswap/v2-sdk": "^4.15.2",
+    "@wagmi/vue": "latest",
+    "animate.css": "^4.1.1",
+    "element-plus": "^2.10.2",
+    "ethers": "^6.15.0",
+    "fullpage.js": "^4.0.37",
+    "pinia": "^3.0.3",
+    "swiper": "^11.2.8",
+    "viem": "latest",
+    "vue": ">=3.4.21",
+    "vue-i18n": "^11.1.7",
+    "vue-router": "^4.5.1",
+    "vue3-marquee": "^4.2.2",
+    "wowjs": "^1.1.3"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.4",
+    "buffer": "^6.0.3",
+    "sass": "^1.89.2",
+    "vite": "^5.2.11",
+    "vue-tsc": "^2.0.6"
+  }
+}

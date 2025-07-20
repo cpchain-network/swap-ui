@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1, minimum-scale=1, user-scalable=no" />
+
+  <title>CP  swap</title>
+  <link rel="icon" href="./logo.png" type="image/png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+
+  <!-- 引入 WOW.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/wow/1.1.2/wow.min.js"></script>
+  <style>
+  #global-loading-mask {
+  position: fixed;
+  left: 0; top: 0; right: 0; bottom: 0;
+  background: #191c21;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  transition: opacity 0.35s;
+  display: none;
+
+  
+}
+
+.loader {
+  width: 56px;
+  height: 56px;
+  border: 6px solid #eee;
+  border-top: 6px solid #10ce7e;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 18px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+#loading-percent {
+  font-size: 22px;
+  color: #10ce7e;
+  font-family: monospace;
+  margin-bottom: 8px;
+  letter-spacing: 2px;
+}
+
+  </style>
+</head>
+
+<body>
+  <div id="app"></div>
+  <div id="global-loading-mask">
+    <img src="./loading.gif" alt="" style="width: 30%;max-width:300PX">
+    <span id="loading-percent">0%</span>
+    
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+
+</html>

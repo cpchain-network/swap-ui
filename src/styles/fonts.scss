@@ -1,0 +1,69 @@
+/* TT Hoves Pro 字体 */
+
+
+/* PingFang 字体 */
+@font-face {
+    font-family   : 'PingFang';
+    src           : url('/src/assets/PingFang/PingFang_Regular.ttf') format('truetype');
+    font-weight   : normal;
+    
+}
+
+@font-face {
+    font-family   : 'PingFang';
+    src           : url('/src/assets/PingFang/PingFang_Medium.ttf') format('truetype');
+    font-weight   : 500;
+   
+}
+
+/* PingFang Bold 字体 */
+@font-face {
+    font-family   : 'PingFang';
+    src           : url('/src/assets/PingFang/PingFang_Bold.ttf') format('truetype');
+    font-weight   : bold;
+   
+}
+
+
+@font-face {
+    font-family: 'TT_Hoves_Pro';
+    src: url('/src/assets/TT/TT_Hoves_Pro_Trial_Regular.ttf') format('truetype');
+    font-weight: normal; /* Regular */
+    
+  }
+  
+  @font-face {
+    font-family: 'TT_Hoves_Pro';
+    src: url('/src/assets/TT/TT_Hoves_Pro_Trial_Medium.ttf') format('truetype');
+    font-weight: 500; /* Medium */
+   
+  }
+  
+  @font-face {
+    font-family: 'TT_Hoves_Pro';
+    src: url('/src/assets/TT/TT_Hoves_Pro_Trial_DemiBold.ttf') format('truetype');
+    font-weight: 600; /* DemiBold */
+   
+  }
+  .name1 ,.num,.name4{
+    font-family: 'TT_Hoves_Pro', sans-serif;
+  }
+  .num  {
+    
+    
+  }
+  html[data-lang='zh-cn'] body {
+   
+     font-family   : 'PingFang', sans-serif;
+    /* 默认中文使用 PingFang */
+    // font-family: 'PingFang_Regularr', sans-serif;
+}
+
+/* 英文使用 TT Hoves Pro */
+html[data-lang='en-us'] body {
+    font-family: 'TT_Hoves_Pro', sans-serif;
+}
+body {
+  overflow: auto;
+  scrollbar-gutter: stable;
+}

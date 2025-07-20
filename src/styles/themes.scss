@@ -1,0 +1,30 @@
+/* 默认主题变量定义 */
+:root {
+  --bg-color   : #ffffff;
+  --text-color : #1a1a1a;
+  --el-bg-color: #121212;
+  --color:#fff;
+  --el-menu-border-color:none;
+  --el-menu-text-color:#fff;
+  --el-menu-bg-color:#151517;
+  --el-menu-active-color:#00CE7A;
+  --el-border-color-light:none;
+}
+
+/* 暗黑主题 */
+.theme-dark {
+  --bg-color  : #1e1e1e;
+  --text-color: #f2f2f2;
+}
+
+/* 蓝色主题 */
+.theme-blue {
+  --bg-color  : #007bff;
+  --text-color: yellow;
+}
+
+/* 绿色主题 */
+.theme-green {
+  --bg-color  : #6aa728;
+  --text-color: #000000;
+}
