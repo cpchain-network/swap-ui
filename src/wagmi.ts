@@ -1,9 +1,32 @@
 import { http, createConfig, createStorage } from '@wagmi/vue'
 import { mainnet, optimism, sepolia } from '@wagmi/vue/chains'
 import { coinbaseWallet, walletConnect } from '@wagmi/vue/connectors'
+import { defineChain } from 'viem'
 
+const cpChain = defineChain({
+  id: 86606,
+  name: 'CPChain Testnet',
+  nativeCurrency: {
+    name: 'CPChain',
+    symbol: 'CP', // ✅ 关键：正确的 symbol
+    decimals: 18,
+  },
+  rpcUrls: {
+    default: {
+      http: ['https://cp-geth-rpc1-testnet.cpchain.com'],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: 'CP Explorer',
+      url: 'https://explorer.testnet.cpchain.com',
+    },
+  },
+  testnet: true,
+})
 export const config = createConfig({
-  chains: [mainnet, sepolia, optimism],
+  // chains: [mainnet, sepolia, optimism],
+  chains:[cpChain],
   connectors: [
     walletConnect({
       projectId: 'f87cf4373910e1766c873dc5df019573',
@@ -11,10 +34,11 @@ export const config = createConfig({
     // coinbaseWallet({ appName: 'Vite Vue Playground', darkMode: true }),
   ],
   storage: createStorage({ storage: localStorage, key: 'vite-vue' }),
-  transports: {
-    [mainnet.id]: http(),
-    [sepolia.id]: http(),
-    [optimism.id]: http(),
+  transports: {         
+     [cpChain.id]: http('https://cp-geth-rpc1-testnet.cpchain.com'),
+    // [mainnet.id]: http(),
+    // [sepolia.id]: http(),
+    // [optimism.id]: http(),
   },
 })
 

@@ -91,7 +91,7 @@
           </span>
 
         </div>
-        <button class="swap-main-btn" @click="sure()" :disabled="isprocess||doSwapprohibitSwap">
+        <button class="swap-main-btn" @click="sure()" :disabled="isprocess">
           <img src="./loading.svg" alt="" style="width: 30px;
             animation: rotate 5s linear infinite;" v-if="isprocess">
           <span v-else> 
@@ -124,6 +124,7 @@ import ethIcon from '@/assets/coin/eth.png'
 import daiIcon from '@/assets/coin/dai.png'
 import usdtIcon from '@/assets/coin/usdt.png'
 import usdcIcon from '@/assets/coin/usdc.svg'
+import cpIcon  from  "@/assets/coin/cp.svg"
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 
@@ -139,13 +140,15 @@ import { estimateQuotes, getPoolReserves, TOKEN_LIST } from './uniswapQuote'
 import { doSwaps } from "./doSwap.js"
 import { computed } from 'vue'
 let provider, signer
-const routerAddress = '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'
-const wethAddress = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'
+// const routerAddress = '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'
+// const wethAddress = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'
+const routerAddress = '0x232F7E1486eC0B54eBA4FCdd08F0B8Cf4247f0D3'
+ const wethAddress = '0xC18eA88732464dc5E38372A7Fb1d30b56Dd0E4d5'
 const userAddress = ref('')
 const connected = ref(false)
 const tokenModalVisible = ref(false)
-let fromSymbol = ref('ETH')
-let toSymbol = ref("DAI")
+let fromSymbol = ref('CP')
+let toSymbol = ref("USDT")
 const rate = ref("")
 const isprocess = ref(false)
 const isfromprocess = ref(false)
@@ -222,11 +225,18 @@ function getIconUrl(icon) {
   // 这样写适配 Vite/Webpack
   return new URL(`${icon}`, import.meta.url).href
 }
+
+// const allAcconts = ref([
+//   { symbol: 'ETH', decimals: 18, token: TOKEN_LIST.ETH, icon: ethIcon, blance: 0,isNative: true, },
+//   { symbol: 'DAI', decimals: 18, token: TOKEN_LIST.DAI, icon: daiIcon, blance: 0,isNative: false,},
+//   { symbol: 'USDT', decimals: 6, token: TOKEN_LIST.USDT, icon: usdtIcon, blance: 0 ,isNative: false,},
+//   { symbol: 'USDC', decimals: 6, token: TOKEN_LIST.USDC, icon: usdcIcon, blance: 0 ,isNative: false,},
+// ])
 const allAcconts = ref([
-  { symbol: 'ETH', decimals: 18, token: TOKEN_LIST.ETH, icon: ethIcon, blance: 0 },
-  { symbol: 'DAI', decimals: 18, token: TOKEN_LIST.DAI, icon: daiIcon, blance: 0 },
-  { symbol: 'USDT', decimals: 6, token: TOKEN_LIST.USDT, icon: usdtIcon, blance: 0 },
-  { symbol: 'USDC', decimals: 6, token: TOKEN_LIST.USDC, icon: usdcIcon, blance: 0 },
+  { symbol: 'CP', decimals: 18, token: TOKEN_LIST.CP, icon: cpIcon, blance: 0, isNative: true, },
+ 
+  { symbol: 'USDT', decimals: 6, token: TOKEN_LIST.USDT, icon: usdtIcon, blance: 0  ,isNative: false},
+  { symbol: 'USDC', decimals: 6, token: TOKEN_LIST.USDC, icon: usdcIcon, blance: 0,isNative: false },
 ])
 function reverseToken() {
   skipWatch.value = true // 本次切换跳过 watch
@@ -276,7 +286,7 @@ async function fetchAllBalancesV6(provider, address, tokenList) {
   const promises = tokenList.map(async (token) => {
     try {
       let raw
-      if (token.symbol === 'ETH') {
+      if (token.isNative) {
         console.log(1)
         raw = await provider.getBalance(address)
       } else {
@@ -367,65 +377,83 @@ watch(
 )
 async function sure() {
   isprocess.value = true
-  if (status.value != "connected") {
+
+  // 1️⃣ 检查钱包连接状态
+  if (status.value !== 'connected') {
     ElMessage({
-      message: "Please connect your wallet",
+      message: 'Please connect your wallet',
       type: 'error',
-      duration: 1000,   // 显示时长，单位毫秒
-      showClose: true,  // 显示关闭按钮
+      duration: 1000,
+      showClose: true,
     })
     isprocess.value = false
     return
   }
-  let fromTokenContract = null;
-  // 只要不是原生 ETH，都 new Contract
-  if (fromTokens.value.symbol !== 'ETH') {
+
+  // 2️⃣ 合约构造：非原生币才构造 fromTokenContract
+  let fromTokenContract = null
+  const isNative = fromTokens.value?.symbol === 'CP' || fromTokens.value?.isNative
+  if (!isNative) {
     if (!fromTokens.value || !fromTokens.value.address) {
-      alert('Token address 未定义！');
-      return;
+      ElMessage({
+        message: 'From token address is missing!',
+        type: 'error',
+      })
+      isprocess.value = false
+      return
     }
-    fromTokenContract = new Contract(fromTokens.value.address, ERC20_ABI, signer);
-  }
-  console.log('fromSymbol:', fromSymbol.value)
-  console.log('fromTokens:', fromTokens.value)
-  console.log("amountIn", amountIn.value)
-  console.log('fromTokenContract:', fromTokenContract)
-  const swapResult = await doSwaps({
-    fromToken: fromTokens.value,
-    toToken: toTokens.value,
-    amountIn: amountIn.value,
-    slippageInput: slippageInput.value,
-    trade: trade.value,
-    userAddress: userAddress.value,
-    signer: signer,
-    routerAddress: routerAddress,
-    fromTokenContract,
-    decimals: decimals.value,
-    wethAddress
-  });
-  if (swapResult.success) {
-    alert('TxHash: ' + swapResult.txHash);
 
-    ElMessage({
-      message: 'TxHash: ' + swapResult.txHash,
-      type: 'success',
-      duration: 1000,   // 显示时长，单位毫秒
-      showClose: true,  // 显示关闭按钮
+    fromTokenContract = new Contract(fromTokens.value.address, ERC20_ABI, signer)
+  }
+
+  // 3️⃣ 调用 swap
+  try {
+    const swapResult = await doSwaps({
+      fromToken: fromTokens.value,
+      toToken: toTokens.value,
+      amountIn: amountIn.value,
+      slippageInput: slippageInput.value,
+      trade: trade.value,
+      userAddress: userAddress.value,
+      signer,
+      routerAddress: '0x232F7E1486eC0B54eBA4FCdd08F0B8Cf4247f0D3', // ✅ CPChain Router 地址
+      fromTokenContract,
+      decimals: decimals.value,
+      wcpAddress: '0xCF4825F0dCaEAa158310473C1FFF1980Acb5b9F7', // ✅ CPChain WCP 地址
+      nativeSymbol: 'CP' // ✅ 设置 native coin symbol 为 CP
     })
 
-    await fetchAllBalancesV6(provider, userAddress.value, allAcconts.value);
-  } else {
+    // 4️⃣ 处理结果
+    if (swapResult.success) {
+      ElMessage({
+        message: `✅ Swap Success! TxHash: ${swapResult.txHash}`,
+        type: 'success',
+        duration: 2000,
+        showClose: true
+      })
 
+      // 刷新钱包余额
+      await fetchAllBalancesV6(provider, userAddress.value, allAcconts.value)
+    } else {
+      ElMessage({
+        message: swapResult.error || 'Swap failed!',
+        type: 'error',
+        duration: 2000,
+        showClose: true
+      })
+    }
+  } catch (err) {
     ElMessage({
-      message: swapResult.error,
+      message: `Swap exception: ${err.message || err}`,
       type: 'error',
-      duration: 1000,   // 显示时长，单位毫秒
-      showClose: true,  // 显示关闭按钮
+      duration: 2000,
+      showClose: true
     })
-
   }
+
   isprocess.value = false
 }
+
 watch(
   status,
   (newStatus) => {
