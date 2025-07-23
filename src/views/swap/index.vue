@@ -91,7 +91,7 @@
           </span>
 
         </div>
-        <button class="swap-main-btn" @click="sure()" :disabled="isprocess">
+        <button class="swap-main-btn" @click="sure()" :disabled="isprocess||doSwapprohibitSwap">
           <img src="./loading.svg" alt="" style="width: 30px;
             animation: rotate 5s linear infinite;" v-if="isprocess">
           <span v-else> 
