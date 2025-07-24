@@ -7,7 +7,7 @@
 // /**
 //  * 计算Uniswap V2两Token兑换的报价（模拟Swap，不实际发送交易）
 //  * Estimate Uniswap V2 swap output/price/minimum amount out
-//  * 
+//  *
 //  * @param {Object} params 参数对象
 //  * @param {string} params.fromSymbol 输入Token符号（如'ETH','DAI'）
 //  * @param {string} params.toSymbol 输出Token符号
@@ -112,7 +112,7 @@ import { keccak256, pack } from '@ethersproject/solidity'
 // const INIT_CODE_HASH = '0x77e4035d5108d4770d37636f13605a9c42186b58ed5a226f35af985996445aef'
 
 const FACTORY_ADDRESS = '0x593b44b2C309468072A8f4d952a085E25A4E8E48'
-const INIT_CODE_HASH = '0x77e4035d5108d4770d37636f13605a9c42186b58ed5a226f35af985996445aef'
+const INIT_CODE_HASH = '0x5a2dc30108940dd053e5fe06fe4deb55d420828f787d508920ac29e08aed3ad9'
 
 // let TOKEN_LIST = {
 //   ETH: {
@@ -229,8 +229,13 @@ export async function getPoolReserves({
   signer
 }) {
   const fromToken = getSdkToken(fromSymbol)
+  console.log("fromToken==", fromToken)
   const toToken = getSdkToken(toSymbol)
+  console.log("toToken==", toToken)
+
   const pairAddress = getPairAddress({ tokenA: fromToken, tokenB: toToken })
+
+  console.log("pairAddress===", pairAddress);
 
   const hasLiquidity = await isPairAvailable(pairAddress, signer)
   if (!hasLiquidity) return { fromReserve: 0, toReserve: 0 }

@@ -1,6 +1,5 @@
 import { http, createConfig, createStorage } from '@wagmi/vue'
-import { mainnet, optimism, sepolia } from '@wagmi/vue/chains'
-import { coinbaseWallet, walletConnect } from '@wagmi/vue/connectors'
+import {  walletConnect } from '@wagmi/vue/connectors'
 import { defineChain } from 'viem'
 
 const cpChain = defineChain({
@@ -13,7 +12,7 @@ const cpChain = defineChain({
   },
   rpcUrls: {
     default: {
-      http: ['https://cp-geth-rpc1-testnet.cpchain.com'],
+      http: ['https://rpc-testnet.cpchain.com'],
     },
   },
   blockExplorers: {
@@ -34,8 +33,8 @@ export const config = createConfig({
     // coinbaseWallet({ appName: 'Vite Vue Playground', darkMode: true }),
   ],
   storage: createStorage({ storage: localStorage, key: 'vite-vue' }),
-  transports: {         
-     [cpChain.id]: http('https://cp-geth-rpc1-testnet.cpchain.com'),
+  transports: {
+     [cpChain.id]: http('https://rpc-testnet.cpchain.com'),
     // [mainnet.id]: http(),
     // [sepolia.id]: http(),
     // [optimism.id]: http(),

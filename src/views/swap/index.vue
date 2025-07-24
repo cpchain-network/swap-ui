@@ -3,7 +3,7 @@
 
     <div class="contents">
       <h1>
-  
+
         <h4>{{ $t('swap.title') }}</h4>
       </h1>
       <div class="swap-card">
@@ -23,7 +23,7 @@
             </div>
           </div>
           <div class="swap-balance">
-       
+
             <div v-if="!prohibitSwap">
               {{ $t('swap.balance') }}:
               <img src="./loading.svg" alt="" style="width: 25px;
@@ -33,7 +33,7 @@
             <div v-else style="color: crimson;"> {{ prohibitReason }}</div>
           </div>
 
-          
+
         </div>
         <!-- 方向切换 -->
         <div class="swap-switch-row" @click="reverseToken">
@@ -94,7 +94,7 @@
         <button class="swap-main-btn" @click="sure()" :disabled="isprocess||doSwapprohibitSwap">
           <img src="./loading.svg" alt="" style="width: 30px;
             animation: rotate 5s linear infinite;" v-if="isprocess">
-          <span v-else> 
+          <span v-else>
             {{ disableReason || $t('swap.doswaps')  }}
           </span>
 
@@ -140,10 +140,8 @@ import { estimateQuotes, getPoolReserves, TOKEN_LIST } from './uniswapQuote'
 import { doSwaps } from "./doSwap.js"
 import { computed } from 'vue'
 let provider, signer
-// const routerAddress = '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'
-// const wethAddress = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'
-const routerAddress = '0x232F7E1486eC0B54eBA4FCdd08F0B8Cf4247f0D3'
- const wethAddress = '0xC18eA88732464dc5E38372A7Fb1d30b56Dd0E4d5'
+const routerAddress = '0x4cFBbe212366bf31DF01F5188d759c738a757509'
+const wethAddress = '0xC18eA88732464dc5E38372A7Fb1d30b56Dd0E4d5'
 const userAddress = ref('')
 const connected = ref(false)
 const tokenModalVisible = ref(false)
@@ -187,7 +185,7 @@ const fromBalance = computed(() => {
   return acc ? acc.blance : 0
 })
 
-// 
+//
 const toBalance = computed(() => {
   const acc = allAcconts.value.find(a => a.symbol === toSymbol.value)
   return acc ? acc.blance : 0
@@ -234,7 +232,7 @@ function getIconUrl(icon) {
 // ])
 const allAcconts = ref([
   { symbol: 'CP', decimals: 18, token: TOKEN_LIST.CP, icon: cpIcon, blance: 0, isNative: true, },
- 
+
   { symbol: 'USDT', decimals: 18, token: TOKEN_LIST.USDT, icon: usdtIcon, blance: 0  ,isNative: false},
   { symbol: 'USDC', decimals: 18, token: TOKEN_LIST.USDC, icon: usdcIcon, blance: 0,isNative: false },
 ])
@@ -274,7 +272,7 @@ async function connectWallet() {
 
 // 批量查询余额
 /**
- * 
+ *
  * @param {Provider} provider ethers v6 provider
  * @param {string} address 钱包地址
  * @param {Array} tokenList 你的 token 数组，含 ETH/USDT/DAI等
@@ -676,5 +674,4 @@ input[type="number"] {
     }
   }
 }
-</style> 
-  
+</style>
