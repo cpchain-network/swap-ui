@@ -235,8 +235,8 @@ function getIconUrl(icon) {
 const allAcconts = ref([
   { symbol: 'CP', decimals: 18, token: TOKEN_LIST.CP, icon: cpIcon, blance: 0, isNative: true, },
  
-  { symbol: 'USDT', decimals: 6, token: TOKEN_LIST.USDT, icon: usdtIcon, blance: 0  ,isNative: false},
-  { symbol: 'USDC', decimals: 6, token: TOKEN_LIST.USDC, icon: usdcIcon, blance: 0,isNative: false },
+  { symbol: 'USDT', decimals: 18, token: TOKEN_LIST.USDT, icon: usdtIcon, blance: 0  ,isNative: false},
+  { symbol: 'USDC', decimals: 18, token: TOKEN_LIST.USDC, icon: usdcIcon, blance: 0,isNative: false },
 ])
 function reverseToken() {
   skipWatch.value = true // 本次切换跳过 watch
