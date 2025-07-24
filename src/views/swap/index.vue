@@ -416,10 +416,10 @@ async function sure() {
       trade: trade.value,
       userAddress: userAddress.value,
       signer,
-      routerAddress: '0x232F7E1486eC0B54eBA4FCdd08F0B8Cf4247f0D3', // ✅ CPChain Router 地址
+      routerAddress: routerAddress, // ✅ CPChain Router 地址
       fromTokenContract,
       decimals: decimals.value,
-      wcpAddress: '0xCF4825F0dCaEAa158310473C1FFF1980Acb5b9F7', // ✅ CPChain WCP 地址
+      wcpAddress: wethAddress, // ✅ CPChain WCP 地址
       nativeSymbol: 'CP' // ✅ 设置 native coin symbol 为 CP
     })
 
