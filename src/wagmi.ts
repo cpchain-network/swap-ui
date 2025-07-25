@@ -3,8 +3,8 @@ import {  walletConnect } from '@wagmi/vue/connectors'
 import { defineChain } from 'viem'
 
 const cpChain = defineChain({
-  id: 86606,
-  name: 'CPChain Testnet',
+  id: 86608,
+  name: 'CPChain Mainnet',
   nativeCurrency: {
     name: 'CPChain',
     symbol: 'CP', // ✅ 关键：正确的 symbol
@@ -12,13 +12,13 @@ const cpChain = defineChain({
   },
   rpcUrls: {
     default: {
-      http: ['https://rpc-testnet.cpchain.com'],
+      http: ['https://rpc.cpchain.com'],
     },
   },
   blockExplorers: {
     default: {
       name: 'CP Explorer',
-      url: 'https://explorer.testnet.cpchain.com',
+      url: 'https://explorer.cpchain.com',
     },
   },
   testnet: true,
@@ -34,7 +34,7 @@ export const config = createConfig({
   ],
   storage: createStorage({ storage: localStorage, key: 'vite-vue' }),
   transports: {
-     [cpChain.id]: http('https://rpc-testnet.cpchain.com'),
+     [cpChain.id]: http('https://rpc.cpchain.com'),
     // [mainnet.id]: http(),
     // [sepolia.id]: http(),
     // [optimism.id]: http(),
