@@ -69,13 +69,13 @@
 
 
           </div>
-          <div style="font-size:12px;color:#38e899;margin-top:2px;text-align: left;">
+          <!-- <div style="font-size:12px;color:#38e899;margin-top:2px;text-align: left;">
             {{ $t('swap.rateWarn') }}：
             <img src="./loading.svg" alt="" style="width: 25px;
             animation: rotate 5s linear infinite;" v-if="isestimateQuote">
 
             <b v-else>{{ minReceive }}{{ toSymbol }}</b>
-          </div>
+          </div> -->
         </div>
         <div class="swap-setting-row" @click="showModal = true">
           <span class="setting-label"> {{ $t('swap.setSlip') }}</span>
@@ -91,23 +91,23 @@
           </span>
 
         </div>
-        <button class="swap-main-btn" @click="sure()" :disabled="isprocess||doSwapprohibitSwap">
+        <button class="swap-main-btn" @click="sure()" :disabled="isprocess || doSwapprohibitSwap">
           <img src="./loading.svg" alt="" style="width: 30px;
             animation: rotate 5s linear infinite;" v-if="isprocess">
           <span v-else>
-            {{ disableReason || $t('swap.doswaps')  }}
+            {{ disableReason || $t('swap.doswaps') }}
           </span>
 
 
         </button>
-        <div style="text-align:left;color:rgb(56, 232, 153);font-size:14px;margin:8px 0;">
+        <!-- <div style="text-align:left;color:rgb(56, 232, 153);font-size:14px;margin:8px 0;">
           {{ $t('swap.rate') }}: 1 {{ fromSymbol }} ≈
           <img src="./loading.svg" alt="" style="width: 25px;
             animation: rotate 5s linear infinite;" v-if="tofromprocess">
           <span v-else> {{ rate }}</span>
           {{ toSymbol }}
-          <!-- {{ userAddress }} -->
-        </div>
+         
+        </div> -->
       </div>
     </div>
     <!-- 选择币种弹框 -->
@@ -124,18 +124,22 @@ import ethIcon from '@/assets/coin/eth.png'
 import daiIcon from '@/assets/coin/dai.png'
 import usdtIcon from '@/assets/coin/usdt.png'
 import usdcIcon from '@/assets/coin/usdc.svg'
-import cpIcon  from  "@/assets/coin/cp.svg"
+import cpIcon from "@/assets/coin/cp.svg"
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
-import { useChainId, useConnect, useDisconnect, useAccount } from '@wagmi/vue'
+import { useChainId, useConnect, useDisconnect, useAccount, } from '@wagmi/vue'
+const { connect, connectors, error } = useConnect();
+
+// const { connector } = useAccount()
+// console.log(connector)
 const { address, status } = useAccount()
 console.log(status)
 import TokenModal from './tokenSelect.vue'
 import { ref, onMounted, watch } from 'vue'
 import SlippageModal from "./SlippageModal.vue"
-import { BrowserProvider, Contract, parseUnits, formatUnits, MaxUint256 } from 'ethers'
+import { BrowserProvider, Contract, parseUnits, formatUnits, MaxUint256, JsonRpcProvider } from 'ethers'
 import { estimateQuotes, getPoolReserves, TOKEN_LIST } from './uniswapQuote'
 import { doSwaps } from "./doSwap.js"
 import { computed } from 'vue'
@@ -162,8 +166,12 @@ const disableReason = computed(() => {
   const balance = parseFloat(fromBalance.value)
   const inputAmount = parseFloat(amountIn.value)
 
-  if (balance <= 0) return  t('swap.nofund')
-  if (inputAmount > balance)  t('swap.nofund')
+  if (balance <= 0) return t('swap.nofund')
+  if (inputAmount > balance){
+    console.log(11)
+    return t('swap.nofund')
+  } 
+  // if(amountIn.value=='') return 1
   return ''
 })
 
@@ -233,8 +241,8 @@ function getIconUrl(icon) {
 const allAcconts = ref([
   { symbol: 'CP', decimals: 18, token: TOKEN_LIST.CP, icon: cpIcon, blance: 0, isNative: true, },
 
-  { symbol: 'USDT', decimals: 18, token: TOKEN_LIST.USDT, icon: usdtIcon, blance: 0  ,isNative: false},
-  { symbol: 'USDC', decimals: 18, token: TOKEN_LIST.USDC, icon: usdcIcon, blance: 0,isNative: false },
+  { symbol: 'USDT', decimals: 18, token: TOKEN_LIST.USDT, icon: usdtIcon, blance: 0, isNative: false },
+  { symbol: 'USDC', decimals: 18, token: TOKEN_LIST.USDC, icon: usdcIcon, blance: 0, isNative: false },
 ])
 function reverseToken() {
   skipWatch.value = true // 本次切换跳过 watch
@@ -247,7 +255,7 @@ function reverseToken() {
   amountIn.value = amountOut.value
   amountOut.value = tempAmount
 }
-const amountIn = ref(0)
+const amountIn = ref()
 const slippageInput = ref(0.5)
 const amountOut = ref(0)
 async function connectWallet() {
@@ -258,8 +266,10 @@ async function connectWallet() {
     return
   }
   if (status.value == "connected") {
+    // const rpcUrl = 'https://cpchain.com' // 或其他 JSON-RPC 地址
+    // provider =  new JsonRpcProvider('https://rpc-testnet.cpchain.com', 86606)
     provider = new BrowserProvider(window.ethereum)
-    await provider.send('eth_requestAccounts', [])
+    // await provider.send('eth_requestAccounts', [])
 
     signer = await provider.getSigner()
     userAddress.value = await signer.getAddress()
@@ -316,13 +326,13 @@ watch(
     if (status.value != "connected") {
       return
     }
-    if(newFrom==newTo)  {
+    if (newFrom == newTo) {
       ElMessage({
-      message:"Swapping the same token is not supported!",
-      type: 'error',
-      duration: 1000,   // 显示时长，单位毫秒
-      showClose: true,  // 显示关闭按钮
-    })
+        message: "Swapping the same token is not supported!",
+        type: 'error',
+        duration: 1000,   // 显示时长，单位毫秒
+        showClose: true,  // 显示关闭按钮
+      })
       return
     }
     if (!connected.value) return
@@ -375,7 +385,15 @@ watch(
 )
 async function sure() {
   isprocess.value = true
-
+  if (connectors.length > 1) {
+    ElMessage({
+      message: t("navbar.warining"),
+      type: 'error',
+    })
+    isprocess.value = false
+   return
+    // showConnet.value = false;
+  }
   // 1️⃣ 检查钱包连接状态
   if (status.value !== 'connected') {
     ElMessage({

@@ -1,5 +1,5 @@
 import { http, createConfig, createStorage } from '@wagmi/vue'
-import {  walletConnect } from '@wagmi/vue/connectors'
+import {  walletConnect ,metaMask,} from '@wagmi/vue/connectors'
 import { defineChain } from 'viem'
 
 const cpChain = defineChain({
@@ -27,9 +27,10 @@ export const config = createConfig({
   // chains: [mainnet, sepolia, optimism],
   chains:[cpChain],
   connectors: [
-    walletConnect({
-      projectId: 'f87cf4373910e1766c873dc5df019573',
-    }),
+   
+    // walletConnect({
+    //   projectId: 'f87cf4373910e1766c873dc5df019573',
+    // }),
     // coinbaseWallet({ appName: 'Vite Vue Playground', darkMode: true }),
   ],
   storage: createStorage({ storage: localStorage, key: 'vite-vue' }),

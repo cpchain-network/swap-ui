@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>指定钱包连接（防止 OKX 劫持）</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.10.0/dist/ethers.umd.min.js"></script>
+  <style>
+    button { margin: 6px; padding: 10px 20px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h2>连接指定钱包</h2>
+  <button onclick="connectMetaMask()">连接 MetaMask</button>
+  <button onclick="connectOKX()">连接 OKX Wallet</button>
+  <button onclick="connectTP()">连接 TokenPocket</button>
+
+  <h3 id="status">未连接</h3>
+  <p id="address"></p>
+  <p id="balance"></p>
+
+  <script>
+    const { BrowserProvider, formatUnits } = ethers;
+
+    async function connectWithProvider(rawProvider, name = '钱包') {
+      if (!rawProvider) {
+        alert(`${name} 未检测到`);
+        return;
+      }
+
+      try {
+        document.getElementById('status').innerText = `连接中 ${name}...`;
+        await rawProvider.request({ method: 'eth_requestAccounts' });
+
+        const provider = new BrowserProvider(rawProvider);
+        const signer = await provider.getSigner();
+        const address = await signer.getAddress();
+        const balance = await provider.getBalance(address);
+
+        document.getElementById('status').innerText = `${name} 已连接 ✅`;
+        document.getElementById('address').innerText = `地址: ${address}`;
+        document.getElementById('balance').innerText = `余额: ${formatUnits(balance, 18)} ETH`;
+      } catch (e) {
+        document.getElementById('status').innerText = `❌ 连接失败: ${e.message}`;
+        console.error(e);
+      }
+    }
+
+    // 🔐 独立钱包连接逻辑（更可靠）
+    function connectMetaMask() {
+      const provider = window.ethereum?.isMetaMask ? window.ethereum : null;
+      connectWithProvider(provider, 'MetaMask');
+    }
+
+    function connectOKX() {
+      const provider = window.okxwallet?.ethereum || window.ethereum?.isOKExWallet ? window.ethereum : null;
+      connectWithProvider(provider, 'OKX Wallet');
+    }
+
+    function connectTP() {
+      const provider = window.tokenPocket?.ethereum || window.ethereum?.isTokenPocket ? window.ethereum : null;
+      connectWithProvider(provider, 'TokenPocket');
+    }
+  </script>
+</body>
+</html>

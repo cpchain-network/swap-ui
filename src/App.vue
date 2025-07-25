@@ -7,7 +7,7 @@ import   bottomBar  from "@/views/homepage/content/footer/index.vue"
 <template>
   <navBar/>
   <RouterView />
-  <bottomBar/>
+  <!-- <bottomBar/> -->
 </template>
 
 <style scoped  lang="scss"></style>

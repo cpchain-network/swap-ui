@@ -66,8 +66,9 @@ export default {
       Korean: "韩语",
       Japanese: "日语"
     },
-    link: "Connect"
-
+    link: "Connect",
+    warining:"Multiple wallet extensions detected in your browser. Please keep only one!",
+    add:"Please enable this plugin!"
   },
 
   "blockOne": {

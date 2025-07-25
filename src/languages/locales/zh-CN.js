@@ -69,7 +69,9 @@ export default {
       Korean: "韩语",
       Japanese: "日语"
     },
-    link: "连接钱包"
+    link: "连接钱包",
+    warining:"检测到浏览器里有多个钱包插件,请保留一个!",
+    add:"请启用该插件!"
 
   },
   blockOne: {
