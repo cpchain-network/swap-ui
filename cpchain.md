@@ -2,7 +2,7 @@
 
 ## 1. Chain Basic Information
 - **Network Name**: CP Chain
-- **Chain ID**: 88608
+- **Chain ID**: 86608
 - **RPC URL**: https://cpchain.com
 - **Block Explorer**: https://explorer.cpchain.com
 

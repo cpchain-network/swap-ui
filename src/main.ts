@@ -3,16 +3,19 @@ import { createPinia } from 'pinia'
 import { VueQueryPlugin } from '@tanstack/vue-query'
 import { WagmiPlugin } from '@wagmi/vue'
 import { createApp } from 'vue'
+// @ts-ignore
 import router from './router'
 import ElementPlus from 'element-plus'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import 'element-plus/dist/index.css'
 import 'element-plus/theme-chalk/display.css'
 import './styles/global.scss'
+// @ts-ignore
 import i18n from "./languages"
 // `@coinbase-wallet/sdk` uses `Buffer`
 globalThis.Buffer = Buffer
 import Vue3Marquee from 'vue3-marquee'
+// @ts-ignore
 import App from './App.vue'
 // import './style.css'
 import { config } from './wagmi'
