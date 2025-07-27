@@ -89,7 +89,7 @@
             </li>
           </ul>
 
-          <div :class="['warning', { shake: isShaking }]" v-if="connectors.length > 1"> {{ $t("navbar.warining") }}</div>
+          <!-- <div :class="['warning', { shake: isShaking }]" v-if="connectors.length > 1"> {{ $t("navbar.warining") }}</div> -->
         </div>
 
       </div>
@@ -160,11 +160,15 @@ import {
   computed,
 } from "vue";
 import { useChainId, useConnect, useDisconnect, useAccount } from "@wagmi/vue";
+import { injected } from '@wagmi/vue/connectors';
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { JsonRpcProvider, formatEther } from 'ethers'
-// import { useBalance  } from '@wagmi/core'
-// import { generateBase64 } from 'ethereum-blockies-base64'
+import { eventBus } from '@/utils/eventBus'
+
+// import { useClipboard } from 'vue-clipboard3'
+import { copyText } from 'vue3-clipboard'
+// const { toClipboard } = useClipboard()
 const router = useRouter();
 const { locale, t } = useI18n();
 import img from "../assets/wallconnect.svg";
@@ -174,6 +178,17 @@ const chainId = useChainId();
 const { connect, connectors, error } = useConnect();
 const { disconnect } = useDisconnect();
 const { address, status } = useAccount();
+
+onMounted(() => {
+  eventBus.on('custom-event', (data) => {
+    console.log('收到事件:', data)
+    getBalanceCp(address.value)
+  })
+})
+
+onBeforeUnmount(() => {
+  eventBus.off('custom-event')
+})
 // const images = computed(() => { })
 import { useCounterStore } from "@/stores/counter";
 import { storeToRefs } from "pinia";
@@ -208,16 +223,16 @@ const wallets = [
     icon: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiBmaWxsPSIjMDAxRjI5Ii8+CjxwYXRoIGQ9Ik0yMTkuOTQ4IDk1LjcwMjJDMjAxLjYyMyA5NS42OTI5IDE4My4zMyA5NS42ODM1IDE2NC45NDEgOTUuNzExNkMxNTMuODIyIDk1LjcxMTYgMTQ5LjY1MSAxMDkuNjcxIDE1Ny45MjEgMTE3LjkzOUwyODMuMDk4IDI0My4xMTdDMjg3LjAwNCAyNDYuNjkgMjg5LjQ0MSAyNTAuNTc0IDI4OS41MyAyNTUuNjkzQzI4OS40NDEgMjYwLjgxMiAyODcuMDA0IDI2NC42OTYgMjgzLjA5OCAyNjguMjY5TDE1Ny45MjEgMzkzLjQ0NkMxNDkuNjUxIDQwMS43MTUgMTUzLjgyMiA0MTUuNjc0IDE2NC45NDEgNDE1LjY3NEMxODMuMzMgNDE1LjcwMiAyMDEuNjIzIDQxNS42OTMgMjE5Ljk0OCA0MTUuNjgzQzIyOS4xMjIgNDE1LjY3OSAyMzguMzA1IDQxNS42NzQgMjQ3LjUxMSA0MTUuNjc0QzI1OS41NTUgNDE1LjY3NCAyNjYuNzIgNDA5LjI0IDI3My4xNTQgNDAyLjgwNUwzODYuMDQ3IDI4OS45MTJDMzk1LjA1NyAyODAuOTAyIDQwMy4xMTkgMjY4LjkzOSA0MDMuMDA5IDI1NS42OTNDNDAzLjExOSAyNDIuNDQ3IDM5NS4wNTcgMjMwLjQ4NCAzODYuMDQ3IDIyMS40NzRMMjczLjE1NCAxMDguNThDMjY2LjcyIDEwMi4xNDYgMjU5LjU1NSA5NS43MTE2IDI0Ny41MTEgOTUuNzExNkMyMzguMzA1IDk1LjcxMTYgMjI5LjEyMiA5NS43MDY5IDIxOS45NDggOTUuNzAyMloiIGZpbGw9IiMwMEYwRkYiLz4KPC9zdmc+Cg==",
     id: "com.bitget.web3"
   },
-  {
+  // {
 
-    name: "OKX Wallet",
-    icon: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAJDSURBVHgB7Zq9jtpAEMfHlhEgQLiioXEkoAGECwoKxMcTRHmC5E3IoyRPkPAEkI7unJYmTgEFTYwA8a3NTKScLnCHN6c9r1e3P2llWQy7M/s1Gv1twCP0ej37dDq9x+Zut1t3t9vZjDEHIiSRSPg4ZpDL5fxkMvn1cDh8m0wmfugfO53OoFQq/crn8wxfY9EymQyrVCqMfHvScZx1p9ls3pFxXBy/bKlUipGPrVbLuQqAfsCliq3zl0H84zwtjQrOw4Mt1W63P5LvBm2d+Xz+YzqdgkqUy+WgWCy+Mc/nc282m4FqLBYL+3g8fjDxenq72WxANZbLJeA13zDX67UDioL5ybXwafMYu64Ltn3bdDweQ5R97fd7GyhBQMipx4POeEDHIu2LfDdBIGGz+hJ9CQ1ABjoA2egAZPM6AgiCAEQhsi/C4jHyPA/6/f5NG3Ks2+3CYDC4aTccDrn6ojG54MnEvG00GoVmWLIRNZ7wTCwDHYBsdACy0QHIhiuRETxlICWpMMhGZHmqS8qH6JLyGegAZKMDkI0uKf8X4SWlaZo+Pp1bRrwlJU8ZKLIvUjKh0WiQ3sRUbNVq9c5Ebew7KEo2m/1p4jJ4qAmDaqDQBzj5XyiAT4VCQezJigAU+IDU+z8vJFnGWeC+bKQV/5VZ71FV6L7PA3gg3tXrdQ+DgLhC+75Wq3no69P3MC0NFQpx2lL04Ql9gHK1bRDjsSBIvScBnDTk1WrlGIZBorIDEYJj+rhdgnQ67VmWRe0zlplXl81vcyEt0rSoYDUAAAAASUVORK5CYII=",
-    id: "com.okex.wallet"
-  },
+  //   name: "OKX Wallet",
+  //   icon: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAJDSURBVHgB7Zq9jtpAEMfHlhEgQLiioXEkoAGECwoKxMcTRHmC5E3IoyRPkPAEkI7unJYmTgEFTYwA8a3NTKScLnCHN6c9r1e3P2llWQy7M/s1Gv1twCP0ej37dDq9x+Zut1t3t9vZjDEHIiSRSPg4ZpDL5fxkMvn1cDh8m0wmfugfO53OoFQq/crn8wxfY9EymQyrVCqMfHvScZx1p9ls3pFxXBy/bKlUipGPrVbLuQqAfsCliq3zl0H84zwtjQrOw4Mt1W63P5LvBm2d+Xz+YzqdgkqUy+WgWCy+Mc/nc282m4FqLBYL+3g8fjDxenq72WxANZbLJeA13zDX67UDioL5ybXwafMYu64Ltn3bdDweQ5R97fd7GyhBQMipx4POeEDHIu2LfDdBIGGz+hJ9CQ1ABjoA2egAZPM6AgiCAEQhsi/C4jHyPA/6/f5NG3Ks2+3CYDC4aTccDrn6ojG54MnEvG00GoVmWLIRNZ7wTCwDHYBsdACy0QHIhiuRETxlICWpMMhGZHmqS8qH6JLyGegAZKMDkI0uKf8X4SWlaZo+Pp1bRrwlJU8ZKLIvUjKh0WiQ3sRUbNVq9c5Ebew7KEo2m/1p4jJ4qAmDaqDQBzj5XyiAT4VCQezJigAU+IDU+z8vJFnGWeC+bKQV/5VZ71FV6L7PA3gg3tXrdQ+DgLhC+75Wq3no69P3MC0NFQpx2lL04Ql9gHK1bRDjsSBIvScBnDTk1WrlGIZBorIDEYJj+rhdgnQ67VmWRe0zlplXl81vcyEt0rSoYDUAAAAASUVORK5CYII=",
+  //   id: "com.okex.wallet"
+  // },
 
 
 ]
-const  add =computed(()=>{
+const add = computed(() => {
   return t("navbar.add")
 })
 // 菜单列表
@@ -376,7 +391,12 @@ watch(address, async (newAddress) => {
     balance.value = '0.0000'
     return
   }
+  getBalanceCp(newAddress)
+  
+}, { immediate: true }) // 立即执行一次
 
+
+async function getBalanceCp(newAddress){
   try {
     const raw = await provider.getBalance(newAddress)
     balance.value = parseFloat(formatEther(raw)).toFixed(4)
@@ -384,38 +404,47 @@ watch(address, async (newAddress) => {
     console.error('查询失败:', err)
     balance.value = '错误'
   }
-}, { immediate: true }) // 立即执行一次
+}
 console.log(connectors);
 // 存储当前滚动位置
 const scrollY = ref(0);
-
+function waitForTPProvider(timeout = 5000) {
+  return new Promise((resolve, reject) => {
+    const start = Date.now();
+    const timer = setInterval(() => {
+      const eth = window.ethereum;
+      if (eth && eth.isTokenPocket) {
+        clearInterval(timer);
+        resolve(eth);
+      }
+      if (Date.now() - start > timeout) {
+        clearInterval(timer);
+        reject(new Error('TokenPocket 插件未注入或加载超时'));
+      }
+    }, 100);
+  });
+}
 async function wallconnects(id, chainId) {
-  if (connectors.length > 1) {
+  // const connector = injected(); // ✅
+  // await connect({ connector, chainId })
+  console.log(connectors)
 
-    isShaking.value = true
-    setTimeout(() => {
-      isShaking.value = false
-    }, 500)
-    return
-    // showConnet.value = false;
-  }
   const connectMetaMask = async () => {
     const connector = connectors.find(c => c.id === id)
-    console.log(connector)
+
     if (connector) {
+
+
       await connect({ connector, chainId })
+
     } else {
-      ElMessage({
-      message:add.value,
-      type: 'error',
-      duration: 1000,   // 显示时长，单位毫秒
-      showClose: true,  // 显示关闭按钮
-    })
+      const connector = injected(); // ✅
+      await connect({ connector, chainId })
     }
 
   }
   connectMetaMask()
-  console.log(connectors)
+  // console.log(connectors)
   // await connect({ connector, chainId });
   closeLogin()
   // @click="connect({ connector, chainId })"
@@ -456,13 +485,20 @@ onMounted(() => {
   window.addEventListener("scroll", handleScroll);
 });
 async function copyToClipboard(text) {
-  try {
-    await navigator.clipboard.writeText(text)
-    return true
-  } catch (e) {
-    console.error('复制失败:', e)
-    return false
-  }
+  copyText(text, undefined, (error, event) => {
+    if (error) {
+      // alert('Can not copy')
+      // console.log(error)
+    } else {
+
+      ElMessage({
+        message: `copy Success! `,
+        type: 'success',
+        duration: 2000,
+        showClose: true
+      })
+    }
+  })
 }
 // 页面卸载前清除滚动事件监听
 onBeforeUnmount(() => {
@@ -581,7 +617,7 @@ const handleSelect = (index, indexPath) => {
 
   .content1 {
     width: 80%;
-    height: 450px;
+    height: 350px;
     max-width: 500px;
     border-radius: 16px;
     background: var(---, #151517);
@@ -964,4 +1000,5 @@ a {
       }
     }
   }
-}</style>
+}
+</style>

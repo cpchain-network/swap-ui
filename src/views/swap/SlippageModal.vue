@@ -70,7 +70,7 @@ const { t } = useI18n()
     if (val && parseFloat(val) < 0) val = ''
     displayValue.value = val
     if (val && parseFloat(val) > MAX) {
-      warn.value = `Maximum allowed is${MAX}%`
+      warn.value = `Maximum allowed is   ${MAX}%`
       displayValue.value = String(MAX)
     }
   }
@@ -83,10 +83,10 @@ const { t } = useI18n()
     }
     let num = Number(val)
     if (num < MIN) {
-      warn.value = `Minimum allowed is${MIN}%`
+      warn.value = `Minimum allowed is   ${MIN}%`
       num = MIN
     } else if (num > MAX) {
-      warn.value = `Maximum allowed is${MAX}%`
+      warn.value = `Maximum allowed is    ${MAX}%`
       num = MAX
     }
     displayValue.value = String(Number(num.toFixed(2)))
@@ -109,11 +109,11 @@ const { t } = useI18n()
     }
     let num = Number(val)
     if (num < MIN) {
-      warn.value = `最小为${MIN}%`
+      warn.value = `最小为   ${MIN}%`
       num = MIN
     }
     if (num > MAX) {
-      warn.value = `最大只能为${MAX}%`
+      warn.value = `最大只能为   ${MAX}%`
       num = MAX
     }
     num = Number(num.toFixed(2))

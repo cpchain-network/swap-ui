@@ -1,7 +1,7 @@
 export default {
   link: {
     titel: "Connect a Wallet",
-    exit: "exit！"
+    exit: "Disconnec"
   },
   notice:{
     title: 'Feature Under Development',
@@ -210,7 +210,7 @@ export default {
     "sign_out": "sign out"
   },
   swap: {
-    title: "Swap anytime, anywhere",
+    title: "Swap on  CP Chain",
     sell: "Sell",
     buy: "Buy",
     balance: "Balance",

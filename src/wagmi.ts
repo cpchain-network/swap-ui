@@ -1,5 +1,5 @@
 import { http, createConfig, createStorage } from '@wagmi/vue'
-import {  walletConnect ,metaMask,} from '@wagmi/vue/connectors'
+import {  walletConnect ,metaMask,injected} from '@wagmi/vue/connectors'
 import { defineChain } from 'viem'
 
 const cpChain = defineChain({
@@ -27,7 +27,7 @@ export const config = createConfig({
   // chains: [mainnet, sepolia, optimism],
   chains:[cpChain],
   connectors: [
-   
+    injected(),
     // walletConnect({
     //   projectId: 'f87cf4373910e1766c873dc5df019573',
     // }),

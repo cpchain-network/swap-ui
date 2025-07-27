@@ -12,6 +12,7 @@
         <div class="swap-row">
           <div class="swap-label">{{ $t('swap.sell') }}</div>
           <div class="swap-amount-row">
+          
             <input type="number" v-model="amountIn" class="swap-amount-input" placeholder="0.00" />
             <div class="swap-token-btn" @click="selIcon(1, fromSymbol)">
               <img :src="fromIcon" alt="">
@@ -91,14 +92,14 @@
           </span>
 
         </div>
-        <button class="swap-main-btn" @click="sure()" :disabled="isprocess || doSwapprohibitSwap">
+        <button class="swap-main-btn" @click="sure()" :disabled="isprocess || doSwapprohibitSwap||(amountIn=='')||isestimateQuote">
           <img src="./loading.svg" alt="" style="width: 30px;
             animation: rotate 5s linear infinite;" v-if="isprocess">
           <span v-else>
             {{ disableReason || $t('swap.doswaps') }}
           </span>
 
-
+         
         </button>
         <!-- <div style="text-align:left;color:rgb(56, 232, 153);font-size:14px;margin:8px 0;">
           {{ $t('swap.rate') }}: 1 {{ fromSymbol }} ≈
@@ -127,10 +128,14 @@ import usdcIcon from '@/assets/coin/usdc.svg'
 import cpIcon from "@/assets/coin/cp.svg"
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
-
+import { getWalletClient } from '@wagmi/core'
 const { t } = useI18n()
+import { useEthersProvider } from './useEthersProvider.js'
+
 import { useChainId, useConnect, useDisconnect, useAccount, } from '@wagmi/vue'
 const { connect, connectors, error } = useConnect();
+import { eventBus } from '../../utils/eventBus'
+
 
 // const { connector } = useAccount()
 // console.log(connector)
@@ -260,12 +265,21 @@ const slippageInput = ref(0.5)
 const amountOut = ref(0)
 async function connectWallet() {
 
+//   const client = await getWalletClient()
+
+// if (!client) throw new Error('请先连接钱包')
+
+// const injectedProvider = client.transport?.value?.provider
+// if (!injectedProvider) throw new Error('未找到 provider')
+
   if (!window.ethereum) {
 
     error.value = '请先安装MetaMask'
     return
   }
   if (status.value == "connected") {
+   
+
     // const rpcUrl = 'https://cpchain.com' // 或其他 JSON-RPC 地址
     // provider =  new JsonRpcProvider('https://rpc-testnet.cpchain.com', 86606)
     provider = new BrowserProvider(window.ethereum)
@@ -385,15 +399,15 @@ watch(
 )
 async function sure() {
   isprocess.value = true
-  if (connectors.length > 1) {
-    ElMessage({
-      message: t("navbar.warining"),
-      type: 'error',
-    })
-    isprocess.value = false
-   return
-    // showConnet.value = false;
-  }
+  // if (connectors.length > 1) {
+  //   ElMessage({
+  //     message: t("navbar.warining"),
+  //     type: 'error',
+  //   })
+  //   isprocess.value = false
+  //  return
+  //   // showConnet.value = false;
+  // }
   // 1️⃣ 检查钱包连接状态
   if (status.value !== 'connected') {
     ElMessage({
@@ -442,7 +456,7 @@ async function sure() {
     // 4️⃣ 处理结果
     if (swapResult.success) {
       ElMessage({
-        message: `✅ Swap Success! TxHash: ${swapResult.txHash}`,
+        message: `Swap Success! TxHash: ${swapResult.txHash}`,
         type: 'success',
         duration: 2000,
         showClose: true
@@ -466,7 +480,9 @@ async function sure() {
       showClose: true
     })
   }
-
+  amountIn.value =''
+  amountOut.value =''
+  eventBus.emit('custom-event', '发送的数据')
   isprocess.value = false
 }
 
@@ -476,9 +492,10 @@ watch(
     if (newStatus === "connected" || newStatus === "disconnected") {
       connectWallet()
     }
-    // if ( newStatus === "disconnected") {
-    //   window.location.reload()
-    // }
+    if ( newStatus === "disconnected") {
+      amountIn.value=''
+      amountOut.value=''
+    }
   }
 )
 onMounted(() => {
@@ -488,7 +505,8 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 #container {
-  background: #000;
+background:#121212 url("../../assets/faucet_bg.png") no-repeat;
+background-size:  100%   100%;
   width: 100vw;
   height: 120vh;
   display: flex;

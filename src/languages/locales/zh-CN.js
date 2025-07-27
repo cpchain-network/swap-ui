@@ -2,7 +2,7 @@ export default {
 
   link: {
     titel: "链接钱包",
-    exit: "退出！"
+    exit: "断开链接"
   },
   notice: {
     title: "功能开发中",
