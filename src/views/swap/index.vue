@@ -244,8 +244,11 @@ function getIconUrl(icon) {
 //   { symbol: 'USDC', decimals: 6, token: TOKEN_LIST.USDC, icon: usdcIcon, blance: 0 ,isNative: false,},
 // ])
 const allAcconts = ref([
+  { symbol: 'CP', decimals: 18, token: TOKEN_LIST["CP"], icon: cpIcon, blance: 0, isNative: true, },
   { symbol: '21CP', decimals: 18, token: TOKEN_LIST["21CP"], icon: cpIcon, blance: 0, isNative: false, },
   { symbol: '3000U', decimals: 18, token: TOKEN_LIST["3000U"], icon: usdtIcon, blance: 0, isNative: false },
+  { symbol: 'CPUSDT', decimals: 18, token: TOKEN_LIST["CPUSDT"], icon: usdtIcon, blance: 0, isNative: false, },
+  { symbol: 'CPUSDC', decimals: 18, token: TOKEN_LIST["CPUSDC"], icon: usdcIcon, blance: 0, isNative: false, },
 ])
 function reverseToken() {
   skipWatch.value = true // 本次切换跳过 watch
