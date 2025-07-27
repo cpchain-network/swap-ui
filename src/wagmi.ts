@@ -1,9 +1,15 @@
+// @ts-ignore
+// @ts-ignore
+// @ts-ignore
+
 import { http, createConfig, createStorage } from '@wagmi/vue'
-import {  walletConnect ,metaMask,injected} from '@wagmi/vue/connectors'
+// @ts-ignore
+import { injected} from '@wagmi/vue/connectors'
+// @ts-ignore
 import { defineChain } from 'viem'
 
 const cpChain = defineChain({
-  id: 86606,
+  id: 86608,
   name: 'CPChain Testnet',
   nativeCurrency: {
     name: 'CPChain',
@@ -12,13 +18,13 @@ const cpChain = defineChain({
   },
   rpcUrls: {
     default: {
-      http: ['https://rpc-testnet.cpchain.com'],
+      http: ['https://rpc.cpchain.com'],
     },
   },
   blockExplorers: {
     default: {
       name: 'CP Explorer',
-      url: 'https://explorer.testnet.cpchain.com',
+      url: 'https://explorer.cpchain.com',
     },
   },
   testnet: true,
@@ -35,7 +41,7 @@ export const config = createConfig({
   ],
   storage: createStorage({ storage: localStorage, key: 'vite-vue' }),
   transports: {
-     [cpChain.id]: http('https://rpc-testnet.cpchain.com'),
+     [cpChain.id]: http('https://rpc.cpchain.com'),
     // [mainnet.id]: http(),
     // [sepolia.id]: http(),
     // [optimism.id]: http(),

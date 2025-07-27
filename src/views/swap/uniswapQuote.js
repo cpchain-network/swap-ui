@@ -1,6 +1,3 @@
-
-
-
 import { Pair, Route, Trade } from '@uniswap/v2-sdk'
 import {
   CurrencyAmount, TradeType, Percent, WETH9, ChainId, Token
@@ -10,8 +7,7 @@ import { getCreate2Address } from '@ethersproject/address'
 import { keccak256, pack } from '@ethersproject/solidity'
 
 
-
-const FACTORY_ADDRESS = '0x593b44b2C309468072A8f4d952a085E25A4E8E48'
+const FACTORY_ADDRESS = '0x2FC7B621aB51108e3108dD0EbCE76cb05545743a'
 const INIT_CODE_HASH = '0x5a2dc30108940dd053e5fe06fe4deb55d420828f787d508920ac29e08aed3ad9'
 
 
@@ -24,9 +20,9 @@ const TOKEN_LIST = {
     isNative: true,
     chainId: 86606
   },
-  USDT: new Token(86606, '0x6C255b22864bBC176431c42695D16f41576e5618', 18, 'USDT', 'Tether USD'),
-  USDC: new Token(86606, '0xb884F1C92AF157dD3dcC54512a595b1D9531423d', 18, 'USDC', 'USD//C'),
-  WCP: new Token(86606, '0xC18eA88732464dc5E38372A7Fb1d30b56Dd0E4d5', 18, 'WCP', 'Wrapped CP')
+  "3000U": new Token(86608, '0xd6A4893cb67E1C4E2e4639054C22A4E705c68369', 18, '3000U', '3000U Token'),
+  "21CP": new Token(86608, '0xd3Ba02256497e8bd516ACA7217e73ece65e2E8Dc', 18, '21CP', '21CP Token'),
+  "WCP": new Token(86608, '0xCF4825F0dCaEAa158310473C1FFF1980Acb5b9F7', 18, 'WCP', 'Wrapped CP')
 }
 
 // ✅ 获取 SDK Token 实例

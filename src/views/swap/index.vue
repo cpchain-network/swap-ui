@@ -12,7 +12,7 @@
         <div class="swap-row">
           <div class="swap-label">{{ $t('swap.sell') }}</div>
           <div class="swap-amount-row">
-          
+
             <input type="number" v-model="amountIn" class="swap-amount-input" placeholder="0.00" />
             <div class="swap-token-btn" @click="selIcon(1, fromSymbol)">
               <img :src="fromIcon" alt="">
@@ -99,7 +99,7 @@
             {{ disableReason || $t('swap.doswaps') }}
           </span>
 
-         
+
         </button>
         <!-- <div style="text-align:left;color:rgb(56, 232, 153);font-size:14px;margin:8px 0;">
           {{ $t('swap.rate') }}: 1 {{ fromSymbol }} ≈
@@ -107,7 +107,7 @@
             animation: rotate 5s linear infinite;" v-if="tofromprocess">
           <span v-else> {{ rate }}</span>
           {{ toSymbol }}
-         
+
         </div> -->
       </div>
     </div>
@@ -149,13 +149,13 @@ import { estimateQuotes, getPoolReserves, TOKEN_LIST } from './uniswapQuote'
 import { doSwaps } from "./doSwap.js"
 import { computed } from 'vue'
 let provider, signer
-const routerAddress = '0x4cFBbe212366bf31DF01F5188d759c738a757509'
-const wethAddress = '0xC18eA88732464dc5E38372A7Fb1d30b56Dd0E4d5'
+const routerAddress = '0x232F7E1486eC0B54eBA4FCdd08F0B8Cf4247f0D3'
+const wethAddress = '0xCF4825F0dCaEAa158310473C1FFF1980Acb5b9F7'
 const userAddress = ref('')
 const connected = ref(false)
 const tokenModalVisible = ref(false)
-let fromSymbol = ref('CP')
-let toSymbol = ref("USDT")
+let fromSymbol = ref('21CP')
+let toSymbol = ref("3000U")
 const rate = ref("")
 const isprocess = ref(false)
 const isfromprocess = ref(false)
@@ -175,7 +175,7 @@ const disableReason = computed(() => {
   if (inputAmount > balance){
     console.log(11)
     return t('swap.nofund')
-  } 
+  }
   // if(amountIn.value=='') return 1
   return ''
 })
@@ -244,10 +244,8 @@ function getIconUrl(icon) {
 //   { symbol: 'USDC', decimals: 6, token: TOKEN_LIST.USDC, icon: usdcIcon, blance: 0 ,isNative: false,},
 // ])
 const allAcconts = ref([
-  { symbol: 'CP', decimals: 18, token: TOKEN_LIST.CP, icon: cpIcon, blance: 0, isNative: true, },
-
-  { symbol: 'USDT', decimals: 18, token: TOKEN_LIST.USDT, icon: usdtIcon, blance: 0, isNative: false },
-  { symbol: 'USDC', decimals: 18, token: TOKEN_LIST.USDC, icon: usdcIcon, blance: 0, isNative: false },
+  { symbol: '21CP', decimals: 18, token: TOKEN_LIST["21CP"], icon: cpIcon, blance: 0, isNative: false, },
+  { symbol: '3000U', decimals: 18, token: TOKEN_LIST["3000U"], icon: usdtIcon, blance: 0, isNative: false },
 ])
 function reverseToken() {
   skipWatch.value = true // 本次切换跳过 watch
@@ -278,7 +276,7 @@ async function connectWallet() {
     return
   }
   if (status.value == "connected") {
-   
+
 
     // const rpcUrl = 'https://cpchain.com' // 或其他 JSON-RPC 地址
     // provider =  new JsonRpcProvider('https://rpc-testnet.cpchain.com', 86606)
