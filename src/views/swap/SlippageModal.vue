@@ -15,7 +15,7 @@
             @keydown.stop
             @keypress="onKeyPress"
             @paste.prevent
-            placeholder=" slippage (0.1~5)"
+            placeholder=" slippage (0.1~50)"
             autocomplete="off"
           />
           <span class="modal-percent">%</span>
@@ -25,7 +25,7 @@
       </div>
     </div>
   </template>
-  
+
   <script setup>
   import { ref, watch } from 'vue'
   import { useI18n } from 'vue-i18n'
@@ -36,23 +36,23 @@ const { t } = useI18n()
     value: Number,
   })
   const emits = defineEmits(['close', 'update:value', 'confirm'])
-  
+
   const MIN = 0.1
-  const MAX = 5
+  const MAX = 50
   const DEFAULT = 0.5
-  
+
   const displayValue = ref(String(props.value ?? DEFAULT))
   const warn = ref('')
-  
+
   watch(() => props.value, v => {
     displayValue.value = v !== undefined ? String(Number(v).toFixed(2)) : String(DEFAULT)
     warn.value = ''
   })
-  
+
   function close() {
     emits('close')
   }
-  
+
   function handleInput(e) {
     warn.value = ''
     let val = e.target.value
@@ -74,7 +74,7 @@ const { t } = useI18n()
       displayValue.value = String(MAX)
     }
   }
-  
+
   function onBlur() {
     let val = displayValue.value
     if (val === '' || isNaN(Number(val))) {
@@ -91,7 +91,7 @@ const { t } = useI18n()
     }
     displayValue.value = String(Number(num.toFixed(2)))
   }
-  
+
   function onKeyPress(e) {
     // 只允许数字和一个小数点
     const char = String.fromCharCode(e.which)
@@ -99,7 +99,7 @@ const { t } = useI18n()
       e.preventDefault()
     }
   }
-  
+
   function confirm() {
     let val = displayValue.value
     if (val === '' || isNaN(Number(val))) {
@@ -123,7 +123,7 @@ const { t } = useI18n()
     emits('close')
   }
   </script>
-  
+
   <style lang="scss" scoped>
   .modal-mask {
     position: fixed;
@@ -204,4 +204,3 @@ const { t } = useI18n()
     }
   }
   </style>
-  
