@@ -155,8 +155,8 @@ const wethAddress = '0xCF4825F0dCaEAa158310473C1FFF1980Acb5b9F7'
 const userAddress = ref('')
 const connected = ref(false)
 const tokenModalVisible = ref(false)
-let fromSymbol = ref('21CP')
-let toSymbol = ref("3000U")
+let fromSymbol = ref('CPUSDT')
+let toSymbol = ref("CPUSDC")
 const rate = ref("")
 const isprocess = ref(false)
 const isfromprocess = ref(false)
@@ -264,8 +264,6 @@ function getIconUrl(icon) {
 // ])
 const allAcconts = ref([
   { symbol: 'CP', decimals: 18, token: TOKEN_LIST["CP"], icon: cpIcon, blance: 0, isNative: true, },
-  { symbol: '21CP', decimals: 18, token: TOKEN_LIST["21CP"], icon: cpIcon, blance: 0, isNative: false, },
-  { symbol: '3000U', decimals: 18, token: TOKEN_LIST["3000U"], icon: usdtIcon, blance: 0, isNative: false },
   { symbol: 'CPUSDT', decimals: 18, token: TOKEN_LIST["CPUSDT"], icon: usdtIcon, blance: 0, isNative: false, },
   { symbol: 'CPUSDC', decimals: 18, token: TOKEN_LIST["CPUSDC"], icon: usdcIcon, blance: 0, isNative: false, },
 ])
@@ -425,7 +423,7 @@ async function sure() {
   isprocess.value = true
   var max = fromBalance.value - 0.0001
   if (amountIn.value > max) {
-   
+
     ElMessage({
       message: `Maximum input: ${max} ${ fromSymbol.value}`,
       type: 'error',
