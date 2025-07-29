@@ -1,7 +1,7 @@
 export default {
   link: {
     titel: "Connect a Wallet",
-    exit: "Disconnec"
+    exit: "Disconnect"
   },
   notice:{
     title: 'Feature Under Development',

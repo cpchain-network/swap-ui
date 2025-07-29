@@ -92,7 +92,8 @@
           </span>
 
         </div>
-        <button class="swap-main-btn" @click="sure()" :disabled="isprocess || doSwapprohibitSwap||(amountIn=='')||isestimateQuote">
+        <button class="swap-main-btn" @click="sure()"
+          :disabled="isprocess || doSwapprohibitSwap || (amountIn == '') || isestimateQuote">
           <img src="./loading.svg" alt="" style="width: 30px;
             animation: rotate 5s linear infinite;" v-if="isprocess">
           <span v-else>
@@ -172,7 +173,7 @@ const disableReason = computed(() => {
   const inputAmount = parseFloat(amountIn.value)
 
   if (balance <= 0) return t('swap.nofund')
-  if (inputAmount > balance){
+  if (inputAmount > balance) {
     console.log(11)
     return t('swap.nofund')
   }
@@ -208,12 +209,30 @@ const fromIcon = computed(() => {
   return acc ? getIconUrl(acc.icon) : ''
 })
 function handleSelect(token) {
-  console.log('你选中了', token)
+
   var state = current.value
   if (state == 1) {
+    // if(toSymbol.value==token.symbol) {
+    //   ElMessage({
+    //     message: "Swapping the same token is not supported!",
+    //     type: 'error',
+    //     duration: 1000,   // 显示时长，单位毫秒
+    //     showClose: true,  // 显示关闭按钮
+    //   })
+    //   return
+    // }
     fromSymbol.value = token.symbol
   }
   if (state == 2) {
+    // if(fromSymbol.value==token.symbol) {
+    //   ElMessage({
+    //     message: "Swapping the same token is not supported!",
+    //     type: 'error',
+    //     duration: 1000,   // 显示时长，单位毫秒
+    //     showClose: true,  // 显示关闭按钮
+    //   })
+    //   return
+    // }
     toSymbol.value = token.symbol
   }
 }
@@ -251,8 +270,12 @@ const allAcconts = ref([
   { symbol: 'CPUSDC', decimals: 18, token: TOKEN_LIST["CPUSDC"], icon: usdcIcon, blance: 0, isNative: false, },
 ])
 function reverseToken() {
+
   skipWatch.value = true // 本次切换跳过 watch
   // 对调币种
+  // if(fromSymbol.value ==toSymbol.value) {
+  //   return
+  // }
   const temp = fromSymbol.value
   fromSymbol.value = toSymbol.value
   toSymbol.value = temp
@@ -266,12 +289,12 @@ const slippageInput = ref(0.5)
 const amountOut = ref(0)
 async function connectWallet() {
 
-//   const client = await getWalletClient()
+  //   const client = await getWalletClient()
 
-// if (!client) throw new Error('请先连接钱包')
+  // if (!client) throw new Error('请先连接钱包')
 
-// const injectedProvider = client.transport?.value?.provider
-// if (!injectedProvider) throw new Error('未找到 provider')
+  // const injectedProvider = client.transport?.value?.provider
+  // if (!injectedProvider) throw new Error('未找到 provider')
 
   if (!window.ethereum) {
 
@@ -384,7 +407,7 @@ watch(
     // }
 
     // 检查池子流动性限制（30% 示例）
-    if (Number(newAmount) > fromReserve * 0.3) {
+    if (Number(newAmount) > fromReserve * 0.5) {
       prohibitReason.value = prohibitReasonText
     }
 
@@ -400,15 +423,18 @@ watch(
 )
 async function sure() {
   isprocess.value = true
-  // if (connectors.length > 1) {
-  //   ElMessage({
-  //     message: t("navbar.warining"),
-  //     type: 'error',
-  //   })
-  //   isprocess.value = false
-  //  return
-  //   // showConnet.value = false;
-  // }
+  var max = fromBalance.value - 0.0001
+  if (amountIn.value > max) {
+   
+    ElMessage({
+      message: `Maximum input: ${max} ${ fromSymbol.value}`,
+      type: 'error',
+      duration: 1000,
+      showClose: true,
+    })
+    isprocess.value = false;
+    return;
+  }
   // 1️⃣ 检查钱包连接状态
   if (status.value !== 'connected') {
     ElMessage({
@@ -481,8 +507,8 @@ async function sure() {
       showClose: true
     })
   }
-  amountIn.value =''
-  amountOut.value =''
+  amountIn.value = ''
+  amountOut.value = ''
   eventBus.emit('custom-event', '发送的数据')
   isprocess.value = false
 }
@@ -493,9 +519,9 @@ watch(
     if (newStatus === "connected" || newStatus === "disconnected") {
       connectWallet()
     }
-    if ( newStatus === "disconnected") {
-      amountIn.value=''
-      amountOut.value=''
+    if (newStatus === "disconnected") {
+      amountIn.value = ''
+      amountOut.value = ''
     }
   }
 )
@@ -506,8 +532,8 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 #container {
-background:#121212 url("../../assets/faucet_bg.png") no-repeat;
-background-size:  100%   100%;
+  background: #121212 url("../../assets/faucet_bg.png") no-repeat;
+  background-size: 100% 100%;
   width: 100vw;
   height: 120vh;
   display: flex;

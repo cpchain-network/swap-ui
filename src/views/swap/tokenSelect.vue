@@ -99,6 +99,7 @@ function getIcon(icon) {
     }
 
     .modal-content {
+        overflow: hidden;
         position: absolute;
         left: 50%;
         transform: translateX(-50%);
@@ -106,8 +107,8 @@ function getIcon(icon) {
         width: 350px;
         background: #18191a;
         color: #fff;
-        border-radius: 18px 0 0 18px;
-        padding: 24px;
+        border-radius: 18px;
+        padding: 10px;
         height: 400px;
         display: flex;
         flex-direction: column;
@@ -131,7 +132,7 @@ function getIcon(icon) {
         justify-content: space-between;
         font-size: 20px;
         font-weight: bold;
-        padding: 0 24px;
+        padding: 0 20px;
         height: 54px;
     }
 
@@ -145,6 +146,9 @@ function getIcon(icon) {
     .search-box {
         padding: 0 20px;
         height:80px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
 
     .search-box input {
