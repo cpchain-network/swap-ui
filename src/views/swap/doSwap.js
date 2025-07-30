@@ -1,11 +1,6 @@
-
 import { MaxUint256, parseUnits } from 'ethers'
 import { Percent } from '@uniswap/sdk-core'
 import { Contract } from 'ethers'
-import { useAccount, useConnectorClient } from '@wagmi/vue'
-
-// const { connector } = useAccount()
-// console.log(connector.name)
 
 /**
  * Unified doSwaps supporting CP native coin or ERC20 CP token on cp chain.
@@ -21,8 +16,8 @@ export async function doSwaps({
   routerAddress,
   fromTokenContract,
   decimals,
-  wcpAddress, // 👈 cp chain 上的 Wrapped CP 地址
-  nativeSymbol = 'CP', // 👈 cp chain native coin symbol
+  wcpAddress,       // 👈 CP 链上的 Wrapped CP 地址
+  nativeSymbol = 'CP' // 👈 原生币符号
 }) {
   let error = null
   let txHash = null
@@ -43,10 +38,25 @@ export async function doSwaps({
     if (!fromToken || !toToken) throw new Error('Token not defined')
     if (!userAddress || !signer || !routerAddress) throw new Error('Incomplete params')
 
-    const slipPercent = Math.floor(Number(slippageInput) * 100)
-    const slippage = new Percent(slipPercent.toString(), '10000')
+    // ✅ 高精度滑点支持：18 位
+    const slippageDecimal = Number(slippageInput)
+    if (isNaN(slippageDecimal) || slippageDecimal < 0) {
+      throw new Error('Invalid slippage input')
+    }
+
+    // ✅ 可选：滑点最小限制（防止用户设成0）
+    if (slippageDecimal < 0.00000001) {
+      throw new Error('Slippage too low, may cause transaction to revert')
+    }
+
+    const numerator = BigInt(Math.floor(slippageDecimal * 1e18))
+    const slippage = new Percent(numerator.toString(), '1000000000000000000') // 1e18 精度
     const minAmount = trade.minimumAmountOut(slippage).quotient.toString()
-    const deadline = Math.floor(Date.now() / 1000) + 60 * 20
+    const deadline = Math.floor(Date.now() / 1000) + 60 * 20 // 20 分钟有效
+
+    console.log('🔢 Input amount:', amountIn)
+    console.log('🎯 Slippage %:', slippageInput)
+    console.log('🧮 Min amount out:', minAmount)
 
     const routerAbi = [
       "function swapExactTokensForTokens(uint,uint,address[],address,uint) returns (uint[])",
@@ -62,12 +72,12 @@ export async function doSwaps({
       const path = [wcpAddress, getTokenAddress(toToken)]
       const amountInParsed = parseUnits(amountIn.toString(), 18)
       tx = await router.swapExactETHForTokens(
-        minAmount, path, userAddress, deadline,
+        minAmount,
+        path,
+        userAddress,
+        deadline,
         {
-          value: amountInParsed,
-
-          // maxFeePerGas: parseUnits('0.299', 'gwei'),           // 0.000000299 CP
-          // maxPriorityFeePerGas: parseUnits('0.5', 'gwei')    // 0.0
+          value: amountInParsed
         }
       )
     }
@@ -84,12 +94,12 @@ export async function doSwaps({
         didApprove = true
       }
       tx = await router.swapExactTokensForETH(
-        amountInParsed, minAmount, path, userAddress, deadline,
-        {
-
-          // maxFeePerGas: parseUnits('0.299', 'gwei'),           // 0.000000299 CP
-          // maxPriorityFeePerGas: parseUnits('0.5', 'gwei')    // 0.0
-        }
+        amountInParsed,
+        minAmount,
+        path,
+        userAddress,
+        deadline,
+        {}
       )
     }
 
@@ -105,12 +115,12 @@ export async function doSwaps({
         didApprove = true
       }
       tx = await router.swapExactTokensForTokens(
-        amountInParsed, minAmount, path, userAddress, deadline,
-        {
-
-          // maxFeePerGas: parseUnits('0.299', 'gwei'),           // 0.000000299 CP
-          // maxPriorityFeePerGas: parseUnits('0.5', 'gwei')    // 0.0
-        }
+        amountInParsed,
+        minAmount,
+        path,
+        userAddress,
+        deadline,
+        {}
       )
     }
 

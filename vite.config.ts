@@ -11,7 +11,6 @@ export default defineConfig({
     open: true,      // 自动打开浏览器
     allowedHosts: [
       'swap-testnet.cpchain.com', // 添加你要允许的 host
-      'swap.cpchain.com',
     ],
   },
   build: {

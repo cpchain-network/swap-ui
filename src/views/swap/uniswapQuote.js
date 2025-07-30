@@ -1,11 +1,10 @@
 import { Pair, Route, Trade } from '@uniswap/v2-sdk'
 import {
-  CurrencyAmount, TradeType, Percent, WETH9, ChainId, Token
+  CurrencyAmount, TradeType, Percent, Token
 } from '@uniswap/sdk-core'
 import { Contract, parseUnits, formatUnits } from 'ethers'
 import { getCreate2Address } from '@ethersproject/address'
 import { keccak256, pack } from '@ethersproject/solidity'
-
 
 const FACTORY_ADDRESS = '0x2FC7B621aB51108e3108dD0EbCE76cb05545743a'
 const INIT_CODE_HASH = '0x5a2dc30108940dd053e5fe06fe4deb55d420828f787d508920ac29e08aed3ad9'
@@ -69,7 +68,8 @@ export async function estimateQuotes({
   const fromToken = getSdkToken(fromSymbol)
   const toToken = getSdkToken(toSymbol)
   const pairAddress = getPairAddress({ tokenA: fromToken, tokenB: toToken })
-console.log(pairAddress)
+  console.log('[Pair Address]', pairAddress)
+
   const hasLiquidity = await isPairAvailable(pairAddress, signer)
   if (!hasLiquidity) throw new Error('Pair not deployed or no liquidity')
 
@@ -96,8 +96,14 @@ console.log(pairAddress)
 
   const outputAmount = formatUnits(tradeTmp.outputAmount.quotient.toString(), toToken.decimals)
   const rate = tradeTmp.executionPrice.toSignificant(6)
-  const slipPercent = Math.floor(Number(slippageInput) * 100)
-  const slippage = new Percent(slipPercent.toString(), '10000')
+
+  // ✅ 支持高精度滑点：0.000001% ~ 任意小数精度
+  const slippageDecimal = Number(slippageInput) / 100
+  const slippage = new Percent(
+    BigInt(Math.floor(slippageDecimal * 1e18)).toString(),
+    '1000000000000000000' // denominator 为 1e18
+  )
+
   const minOut = tradeTmp.minimumAmountOut(slippage)
   const minAmountOut = formatUnits(minOut.quotient.toString(), toToken.decimals)
 
@@ -113,14 +119,9 @@ export async function getPoolReserves({
   signer
 }) {
   const fromToken = getSdkToken(fromSymbol)
-  console.log("fromToken==", fromToken)
   const toToken = getSdkToken(toSymbol)
-  console.log("toToken==", toToken)
 
   const pairAddress = getPairAddress({ tokenA: fromToken, tokenB: toToken })
-
-  console.log("pairAddress===", pairAddress);
-
   const hasLiquidity = await isPairAvailable(pairAddress, signer)
   if (!hasLiquidity) return { fromReserve: 0, toReserve: 0 }
 

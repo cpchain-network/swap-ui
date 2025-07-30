@@ -10,7 +10,7 @@ import { defineChain } from 'viem'
 
 const cpChain = defineChain({
   id: 86608,
-  name: 'CPChain Testnet',
+  name: 'CPChain',
   nativeCurrency: {
     name: 'CPChain',
     symbol: 'CP', // ✅ 关键：正确的 symbol
@@ -27,7 +27,7 @@ const cpChain = defineChain({
       url: 'https://explorer.cpchain.com',
     },
   },
-  testnet: true,
+  testnet: false,
 })
 export const config = createConfig({
   // chains: [mainnet, sepolia, optimism],

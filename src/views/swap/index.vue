@@ -29,7 +29,7 @@
               {{ $t('swap.balance') }}:
               <img src="./loading.svg" alt="" style="width: 25px;
             animation: rotate 5s linear infinite;" v-if="isfromprocess">
-              <span v-else> {{ fromBalance }}{{ fromSymbol }}</span>
+              <span v-else> {{ fromBalance }}</span>
             </div>
             <div v-else style="color: crimson;"> {{ prohibitReason }}</div>
           </div>
@@ -66,7 +66,7 @@
             {{ $t('swap.balance') }} :
             <img src="./loading.svg" alt="" style="width: 25px;
             animation: rotate 5s linear infinite;" v-if="tofromprocess">
-            <span v-else> {{ toBalance }}{{ toSymbol }}</span>
+            <span v-else> {{ toBalance }}</span>
 
 
           </div>
@@ -93,14 +93,15 @@
 
         </div>
         <button class="swap-main-btn" @click="sure()"
-          :disabled="isprocess || doSwapprohibitSwap || (amountIn == '') || isestimateQuote">
+       
+          :disabled="isprocess || doSwapprohibitSwap || (amountIn == '') || isestimateQuote||(amountIn>=fromBalance)">
           <img src="./loading.svg" alt="" style="width: 30px;
             animation: rotate 5s linear infinite;" v-if="isprocess">
           <span v-else>
             {{ disableReason || $t('swap.doswaps') }}
           </span>
 
-
+         
         </button>
         <!-- <div style="text-align:left;color:rgb(56, 232, 153);font-size:14px;margin:8px 0;">
           {{ $t('swap.rate') }}: 1 {{ fromSymbol }} ≈
@@ -108,7 +109,7 @@
             animation: rotate 5s linear infinite;" v-if="tofromprocess">
           <span v-else> {{ rate }}</span>
           {{ toSymbol }}
-
+         
         </div> -->
       </div>
     </div>
@@ -150,13 +151,23 @@ import { estimateQuotes, getPoolReserves, TOKEN_LIST } from './uniswapQuote'
 import { doSwaps } from "./doSwap.js"
 import { computed } from 'vue'
 let provider, signer
+
 const routerAddress = '0x232F7E1486eC0B54eBA4FCdd08F0B8Cf4247f0D3'
 const wethAddress = '0xCF4825F0dCaEAa158310473C1FFF1980Acb5b9F7'
+
+
+let fromSymbol = ref('CPUSDT')
+let toSymbol = ref("CPUSDC")
+
+const allAcconts = ref([
+  { symbol: 'CP', decimals: 18, token: TOKEN_LIST["CP"], icon: cpIcon, blance: 0, isNative: true, },
+  { symbol: 'CPUSDT', decimals: 18, token: TOKEN_LIST["CPUSDT"], icon: usdtIcon, blance: 0, isNative: false, },
+  { symbol: 'CPUSDC', decimals: 18, token: TOKEN_LIST["CPUSDC"], icon: usdcIcon, blance: 0, isNative: false, },
+])
 const userAddress = ref('')
 const connected = ref(false)
 const tokenModalVisible = ref(false)
-let fromSymbol = ref('CPUSDT')
-let toSymbol = ref("CPUSDC")
+
 const rate = ref("")
 const isprocess = ref(false)
 const isfromprocess = ref(false)
@@ -173,7 +184,7 @@ const disableReason = computed(() => {
   const inputAmount = parseFloat(amountIn.value)
 
   if (balance <= 0) return t('swap.nofund')
-  if (inputAmount > balance) {
+  if (inputAmount >=balance) {
     console.log(11)
     return t('swap.nofund')
   }
@@ -262,11 +273,7 @@ function getIconUrl(icon) {
 //   { symbol: 'USDT', decimals: 6, token: TOKEN_LIST.USDT, icon: usdtIcon, blance: 0 ,isNative: false,},
 //   { symbol: 'USDC', decimals: 6, token: TOKEN_LIST.USDC, icon: usdcIcon, blance: 0 ,isNative: false,},
 // ])
-const allAcconts = ref([
-  { symbol: 'CP', decimals: 18, token: TOKEN_LIST["CP"], icon: cpIcon, blance: 0, isNative: true, },
-  { symbol: 'CPUSDT', decimals: 18, token: TOKEN_LIST["CPUSDT"], icon: usdtIcon, blance: 0, isNative: false, },
-  { symbol: 'CPUSDC', decimals: 18, token: TOKEN_LIST["CPUSDC"], icon: usdcIcon, blance: 0, isNative: false, },
-])
+
 function reverseToken() {
 
   skipWatch.value = true // 本次切换跳过 watch
@@ -421,18 +428,7 @@ watch(
 )
 async function sure() {
   isprocess.value = true
-  var max = fromBalance.value - 0.0001
-  if (amountIn.value > max) {
-
-    ElMessage({
-      message: `Maximum input: ${max} ${ fromSymbol.value}`,
-      type: 'error',
-      duration: 1000,
-      showClose: true,
-    })
-    isprocess.value = false;
-    return;
-  }
+ 
   // 1️⃣ 检查钱包连接状态
   if (status.value !== 'connected') {
     ElMessage({
