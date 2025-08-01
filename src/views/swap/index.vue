@@ -29,7 +29,7 @@
               {{ $t('swap.balance') }}:
               <img src="./loading.svg" alt="" style="width: 25px;
             animation: rotate 5s linear infinite;" v-if="isfromprocess">
-              <span v-else> {{ fromBalance }}</span>
+              <span v-else> {{ trimTrailingZeros(fromBalance) }}</span>
             </div>
             <div v-else style="color: crimson;"> {{ prohibitReason }}</div>
           </div>
@@ -39,10 +39,10 @@
         <!-- 方向切换 -->
         <div class="swap-switch-row" @click="reverseToken">
           <div class="swap-switch-btn">
-            <svg width="20" height="20" viewBox="0 0 20 20">
-              <path d="M10 3v14M10 3l-3 3m3-3l3 3M10 17l-3-3m3 3l3-3" stroke="#38E899" stroke-width="1.3" fill="none"
-                stroke-linecap="round" />
-            </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <path d="M5 9L8 6M8 6L11 9M8 6V18" stroke="#00CE7A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M19 15L16 18M16 18L13 15M16 18L16 6" stroke="#00CE7A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
           </div>
         </div>
         <!-- 购买 -->
@@ -66,7 +66,7 @@
             {{ $t('swap.balance') }} :
             <img src="./loading.svg" alt="" style="width: 25px;
             animation: rotate 5s linear infinite;" v-if="tofromprocess">
-            <span v-else> {{ toBalance }}</span>
+            <span v-else> {{ trimTrailingZeros(toBalance) }}</span>
 
 
           </div>
@@ -181,7 +181,9 @@ const disableReason = computed(() => {
   // if(amountIn.value=='') return 1
   return ''
 })
-
+function trimTrailingZeros(valueStr) {
+  return String(valueStr).replace(/\.?0+$/, '')
+}
 const doSwapprohibitSwap = computed(() => disableReason.value !== '')
 
 const showModal = ref(false)
@@ -210,34 +212,34 @@ const fromIcon = computed(() => {
   return acc ? getIconUrl(acc.icon) : ''
 })
 function handleSelect(token) {
+  const selectedSymbol = token.symbol
+  const state = current.value
 
-  var state = current.value
-  if (state == 1) {
-    // if(toSymbol.value==token.symbol) {
-    //   ElMessage({
-    //     message: "Swapping the same token is not supported!",
-    //     type: 'error',
-    //     duration: 1000,   // 显示时长，单位毫秒
-    //     showClose: true,  // 显示关闭按钮
-    //   })
-    //   return
-    // }
-    fromSymbol.value = token.symbol
+  if (state === 1) {
+    if (selectedSymbol === toSymbol.value) {
+      // ⚠️ 交换 from ↔ to
+      const temp = fromSymbol.value
+      fromSymbol.value = toSymbol.value
+      toSymbol.value = temp
+      return
+    }
+    fromSymbol.value = selectedSymbol
   }
-  if (state == 2) {
-    // if(fromSymbol.value==token.symbol) {
-    //   ElMessage({
-    //     message: "Swapping the same token is not supported!",
-    //     type: 'error',
-    //     duration: 1000,   // 显示时长，单位毫秒
-    //     showClose: true,  // 显示关闭按钮
-    //   })
-    //   return
-    // }
-    toSymbol.value = token.symbol
+
+  if (state === 2) {
+    if (selectedSymbol === fromSymbol.value) {
+      // ⚠️ 交换 from ↔ to
+      const temp = fromSymbol.value
+      fromSymbol.value = toSymbol.value
+      toSymbol.value = temp
+      return
+    }
+    toSymbol.value = selectedSymbol
   }
 }
+
 function selIcon(state, symbol) {
+
   tokenModalVisible.value = true
   current.value = state
 
@@ -364,15 +366,15 @@ watch(
     if (status.value != "connected") {
       return
     }
-    if (newFrom == newTo) {
-      ElMessage({
-        message: "Swapping the same token is not supported!",
-        type: 'error',
-        duration: 1000,   // 显示时长，单位毫秒
-        showClose: true,  // 显示关闭按钮
-      })
-      return
-    }
+    // if (newFrom == newTo) {
+    //   ElMessage({
+    //     message: "Swapping the same token is not supported!",
+    //     type: 'error',
+    //     duration: 1000,   // 显示时长，单位毫秒
+    //     showClose: true,  // 显示关闭按钮
+    //   })
+    //   return
+    // }
     if (!connected.value) return
     if (!newAmount || Number(newAmount) <= 0) {
       amountOut.value = ''
@@ -536,6 +538,7 @@ onMounted(() => {
     padding-top: 80px;
     height: 100vh;
     // width: h;
+    
   }
 
   h1 {
@@ -625,7 +628,8 @@ input[type="number"] {
         background: #151517;
         padding: 8px 12px;
         cursor: pointer;
-
+      width: 81px;
+      justify-content: center;
         img {
           width: 16px;
           margin: 0 8px;
@@ -658,13 +662,13 @@ input[type="number"] {
     justify-content: center;
     position: absolute;
     width: calc(100% - 32px);
-    top: 125px;
+    top: 125.4px;
     // bottom: 0px;
     // transform: translateY(-50%);
 
     .swap-switch-btn {
-      background: #18191d;
-      border: 3px solid #23262f;
+      border: 1px solid #2E2F32;
+background: #1E1E1E;
       border-radius: 50%;
 
       width: 48px;

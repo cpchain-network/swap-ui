@@ -18,7 +18,7 @@
                         <div class="token-symbol">{{ token.symbol }}</div>
                         <div class="token-address">{{ formatAddress(token.token?.address) }}</div>
                     </div>
-                    <div class="token-balance">{{ token.balance ?? token.blance }}</div>
+                    <div class="token-balance">{{ trimTrailingZeros(token.balance ?? token.blance )}}</div>
                 </div>
             </div>
         </div>
@@ -49,7 +49,9 @@ const filteredTokens = computed(() => {
     (token.token?.address && token.token.address.toLowerCase().includes(keyword))
   )
 })
-
+function trimTrailingZeros(valueStr) {
+  return String(valueStr).replace(/\.?0+$/, '')
+}
 function select(token) {
     emit('select', token)
     emit('close')

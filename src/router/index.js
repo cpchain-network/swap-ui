@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/homepage/index.vue'
-import  about from "../views/home.vue"
+
+
 
 import   swap   from "../views/swap/index.vue"
 const router = createRouter({
