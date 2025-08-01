@@ -136,12 +136,13 @@ import { useEthersProvider } from './useEthersProvider.js'
 
 import { useChainId, useConnect, useDisconnect, useAccount, } from '@wagmi/vue'
 const { connect, connectors, error } = useConnect();
+const { address, status } = useAccount()
 import { eventBus } from '../../utils/eventBus'
 
 
 // const { connector } = useAccount()
 // console.log(connector)
-const { address, status } = useAccount()
+
 console.log(status)
 import TokenModal from './tokenSelect.vue'
 import { ref, onMounted, watch } from 'vue'
