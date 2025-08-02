@@ -4,7 +4,7 @@
     <div class="contents">
       <h1>
 
-        <h4>{{ $t('swap.title') }}</h4>
+        {{ $t('swap.title') }}
       </h1>
       <div class="swap-card">
 
@@ -475,7 +475,8 @@ async function sure() {
     // 4️⃣ 处理结果
     if (swapResult.success) {
       ElMessage({
-        message: `Swap Success! TxHash: ${swapResult.txHash}`,
+        message: `Swap Success!`,
+        // message: `Swap Success! TxHash: ${swapResult.txHash}`,
         type: 'success',
         duration: 2000,
         showClose: true
@@ -485,6 +486,7 @@ async function sure() {
       await fetchAllBalancesV6(provider, userAddress.value, allAcconts.value)
     } else {
       ElMessage({
+        // message: swapResult.error || 'Swap failed!',
         message: swapResult.error || 'Swap failed!',
         type: 'error',
         duration: 2000,
@@ -527,7 +529,7 @@ onMounted(() => {
   background: #121212 url("../../assets/faucet_bg.png") no-repeat;
   background-size: 100% 100%;
   width: 100vw;
-  height: 120vh;
+  height: 100vh;
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
@@ -537,7 +539,7 @@ onMounted(() => {
   .contents {
     // background: red;
     padding-top: 80px;
-    height: 100vh;
+    // height: 100vh;
     // width: h;
     
   }
@@ -629,16 +631,17 @@ input[type="number"] {
         background: #151517;
         padding: 8px 12px;
         cursor: pointer;
-      width: 81px;
+      // width: 81px;
       justify-content: center;
         img {
           width: 16px;
-          margin: 0 8px;
+          margin: 0 2px;
         }
 
         span {
           color: #fff;
           font-size: 12px;
+          margin: 0  2px;
         }
       }
 
@@ -728,6 +731,16 @@ background: #1E1E1E;
       color: #1A1E1D;
       cursor: pointer;
       opacity: 1;
+    }
+  }
+}
+@media (max-width: 768px) {  
+  #container  {
+    width:  calc(100vw - 30px );
+    padding: 0   15px;
+    h1  {
+      font-size: 24px;
+      margin-bottom: 24px;
     }
   }
 }
