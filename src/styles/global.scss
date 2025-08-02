@@ -76,6 +76,12 @@
 .el-drawer {
   background: #1E1E1E;
 }
+.el-sub-menu .el-sub-menu__icon-arrow {
+  display: none;
+}
+.el-menu:not(.el-menu--collapse) .el-sub-menu__title  {
+  padding-right: 30px;
+}
 body {
   /* 启用滚动，但隐藏滚动条 */
   overflow          : auto;

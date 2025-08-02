@@ -129,7 +129,8 @@ export async function doSwaps({
     return { success: true, txHash, didApprove }
 
   } catch (e) {
-    error = 'Swap failed: ' + (e.reason || e.data?.message || e.message || JSON.stringify(e))
+    error = 'Swap failed:Please try again later! '
+    // error = 'Swap failed: ' + (e.reason || e.data?.message || e.message || JSON.stringify(e))
     return { success: false, error }
   }
 }

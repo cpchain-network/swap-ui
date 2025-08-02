@@ -1,7 +1,3 @@
-// @ts-ignore
-// @ts-ignore
-// @ts-ignore
-
 import { http, createConfig, createStorage } from '@wagmi/vue'
 // @ts-ignore
 import { injected} from '@wagmi/vue/connectors'
