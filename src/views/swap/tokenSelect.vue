@@ -214,14 +214,18 @@ function getIcon(icon) {
         height: 38px;
         border: none;
         outline: none;
-        color: #666868;
+        // color: #666868;
         // padding: 10px;
         padding: 0 20px;
         border-radius: 100px;
         background: #252629;
         border: none;
-        // color: #fff;
+        color: #fff;
         font-size: 16px;
+    }
+
+    .search-box input::placeholder {
+        color: #666868;
     }
 
     .token-list-title {
