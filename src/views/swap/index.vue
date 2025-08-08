@@ -93,7 +93,7 @@
 
         </div>
         <button class="swap-main-btn" @click="sure()"
-       
+
           :disabled="isprocess || doSwapprohibitSwap || (amountIn == '') || isestimateQuote||(amountIn>=fromBalance)">
           <img src="./loading.svg" alt="" style="width: 30px;
             animation: rotate 5s linear infinite;" v-if="isprocess">
@@ -101,7 +101,7 @@
             {{ disableReason || $t('swap.doswaps') }}
           </span>
 
-         
+
         </button>
         <!-- <div style="text-align:left;color:rgb(56, 232, 153);font-size:14px;margin:8px 0;">
           {{ $t('swap.rate') }}: 1 {{ fromSymbol }} ≈
@@ -109,7 +109,7 @@
             animation: rotate 5s linear infinite;" v-if="tofromprocess">
           <span v-else> {{ rate }}</span>
           {{ toSymbol }}
-         
+
         </div> -->
       </div>
     </div>
@@ -128,6 +128,7 @@ import daiIcon from '@/assets/coin/dai.png'
 import usdtIcon from '@/assets/coin/usdt.png'
 import usdcIcon from '@/assets/coin/usdc.svg'
 import cpIcon from "@/assets/coin/cp.svg"
+import jfIcon from "@/assets/coin/jf.jpg"
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { getWalletClient } from '@wagmi/core'
@@ -157,8 +158,8 @@ const wethAddress = '0xCF4825F0dCaEAa158310473C1FFF1980Acb5b9F7'
 const userAddress = ref('')
 const connected = ref(false)
 const tokenModalVisible = ref(false)
-let fromSymbol = ref('CPUSDT')
-let toSymbol = ref("CPUSDC")
+let fromSymbol = ref('JF')
+let toSymbol = ref("CP")
 const rate = ref("")
 const isprocess = ref(false)
 const isfromprocess = ref(false)
@@ -268,6 +269,7 @@ function getIconUrl(icon) {
 // ])
 const allAcconts = ref([
   { symbol: 'CP', decimals: 18, token: TOKEN_LIST["CP"], icon: cpIcon, blance: 0, isNative: true, },
+  { symbol: 'JF', decimals: 18, token: TOKEN_LIST["JF"], icon: jfIcon, blance: 0, isNative: false, },
   { symbol: 'CPUSDT', decimals: 18, token: TOKEN_LIST["CPUSDT"], icon: usdtIcon, blance: 0, isNative: false, },
   { symbol: 'CPUSDC', decimals: 18, token: TOKEN_LIST["CPUSDC"], icon: usdcIcon, blance: 0, isNative: false, },
 ])
@@ -426,7 +428,7 @@ watch(
 )
 async function sure() {
   isprocess.value = true
- 
+
   // 1️⃣ 检查钱包连接状态
   if (status.value !== 'connected') {
     ElMessage({
@@ -541,7 +543,7 @@ onMounted(() => {
     padding-top: 80px;
     // height: 100vh;
     // width: h;
-    
+
   }
 
   h1 {
@@ -734,7 +736,7 @@ background: #1E1E1E;
     }
   }
 }
-@media (max-width: 768px) {  
+@media (max-width: 768px) {
   #container  {
     width:  calc(100vw - 30px );
     padding: 0   15px;
