@@ -82,7 +82,12 @@
           </el-icon>
           <h3>{{ $t("link.titel") }}</h3>
           <ul>
-            <li v-for="connector in wallets" :key="connector.id" @click="wallconnects(connector.id, chainId)">
+            <!-- <li v-for="connector in connectors" :key="connector.id" @click="wallconnects(connector.id, chainId)">
+              <span> {{ connector.name }}</span>
+              <img :src="connector.name == 'WalletConnect' ? img : connector.icon" alt="" />
+
+            </li> -->
+             <li v-for="connector in connectors" :key="connector.id" @click="wallconnects(connector, chainId)">
               <span> {{ connector.name }}</span>
               <img :src="connector.name == 'WalletConnect' ? img : connector.icon" alt="" />
 
@@ -424,28 +429,29 @@ function waitForTPProvider(timeout = 5000) {
     }, 100);
   });
 }
-async function wallconnects(id, chainId) {
+async function wallconnects(connector, chainId) {
   // const connector = injected(); // ✅
   // await connect({ connector, chainId })
   console.log(connectors)
 
-  const connectMetaMask = async () => {
-    const connector = connectors.find(c => c.id === id)
+  // const connectMetaMask = async () => {
+  //   const connector = connectors.find(c => c.id === id)
 
-    if (connector) {
+  //   if (connector) {
 
 
-      await connect({ connector, chainId })
+  //     await connect({ connector, chainId })
 
-    } else {
-      const connector = injected(); // ✅
-      await connect({ connector, chainId })
-    }
+  //   } else {
+  //     const connector = injected(); // ✅
+  //     await connect({ connector, chainId })
+  //   }
 
-  }
-  connectMetaMask()
+  // }
+  // connectMetaMask()
   // console.log(connectors)
   // await connect({ connector, chainId });
+  await connect({ connector, chainId })
   closeLogin()
   // @click="connect({ connector, chainId })"
 }

@@ -18,7 +18,7 @@ const cpChain = defineChain({
   blockExplorers: {
     default: {
       name: 'CP Explorer',
-      url: 'https://explorer.testnet.cpchain.com',
+      url: 'https://explorer-testnet.cpchain.com/',
     },
   },
   testnet: true,
@@ -27,10 +27,14 @@ export const config = createConfig({
   // chains: [mainnet, sepolia, optimism],
   chains:[cpChain],
   connectors: [
-    injected(),
-    // walletConnect({
-    //   projectId: 'f87cf4373910e1766c873dc5df019573',
-    // }),
+    //  injected({shimDisconnect: true}),
+    walletConnect({
+      projectId: 'f87cf4373910e1766c873dc5df019573',
+      qrModalOptions: {
+        explorerRecommendedWalletIds: 'NONE',
+        enableExplorer: false,
+      },
+    }),
     // coinbaseWallet({ appName: 'Vite Vue Playground', darkMode: true }),
   ],
   storage: createStorage({ storage: localStorage, key: 'vite-vue' }),

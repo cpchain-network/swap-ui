@@ -4,7 +4,7 @@
     <div class="contents">
       <h1>
 
-        <h4>{{ $t('swap.title') }}</h4>
+        {{ $t('swap.title') }}
       </h1>
       <div class="swap-card">
 
@@ -29,7 +29,7 @@
               {{ $t('swap.balance') }}:
               <img src="./loading.svg" alt="" style="width: 25px;
             animation: rotate 5s linear infinite;" v-if="isfromprocess">
-              <span v-else> {{ fromBalance }}{{ fromSymbol }}</span>
+              <span v-else> {{ trimTrailingZeros(fromBalance) }}</span>
             </div>
             <div v-else style="color: crimson;"> {{ prohibitReason }}</div>
           </div>
@@ -39,10 +39,10 @@
         <!-- 方向切换 -->
         <div class="swap-switch-row" @click="reverseToken">
           <div class="swap-switch-btn">
-            <svg width="20" height="20" viewBox="0 0 20 20">
-              <path d="M10 3v14M10 3l-3 3m3-3l3 3M10 17l-3-3m3 3l3-3" stroke="#38E899" stroke-width="1.3" fill="none"
-                stroke-linecap="round" />
-            </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <path d="M5 9L8 6M8 6L11 9M8 6V18" stroke="#00CE7A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M19 15L16 18M16 18L13 15M16 18L16 6" stroke="#00CE7A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
           </div>
         </div>
         <!-- 购买 -->
@@ -66,7 +66,7 @@
             {{ $t('swap.balance') }} :
             <img src="./loading.svg" alt="" style="width: 25px;
             animation: rotate 5s linear infinite;" v-if="tofromprocess">
-            <span v-else> {{ toBalance }}{{ toSymbol }}</span>
+            <span v-else> {{ trimTrailingZeros(toBalance) }}</span>
 
 
           </div>
@@ -93,14 +93,15 @@
 
         </div>
         <button class="swap-main-btn" @click="sure()"
-          :disabled="isprocess || doSwapprohibitSwap || (amountIn == '') || isestimateQuote">
+       
+          :disabled="isprocess || doSwapprohibitSwap || (amountIn == '') || isestimateQuote||(amountIn>=fromBalance)">
           <img src="./loading.svg" alt="" style="width: 30px;
             animation: rotate 5s linear infinite;" v-if="isprocess">
           <span v-else>
             {{ disableReason || $t('swap.doswaps') }}
           </span>
 
-
+         
         </button>
         <!-- <div style="text-align:left;color:rgb(56, 232, 153);font-size:14px;margin:8px 0;">
           {{ $t('swap.rate') }}: 1 {{ fromSymbol }} ≈
@@ -135,12 +136,13 @@ import { useEthersProvider } from './useEthersProvider.js'
 
 import { useChainId, useConnect, useDisconnect, useAccount, } from '@wagmi/vue'
 const { connect, connectors, error } = useConnect();
+const { address, status } = useAccount()
 import { eventBus } from '../../utils/eventBus'
 
 
 // const { connector } = useAccount()
 // console.log(connector)
-const { address, status } = useAccount()
+
 console.log(status)
 import TokenModal from './tokenSelect.vue'
 import { ref, onMounted, watch } from 'vue'
@@ -173,14 +175,16 @@ const disableReason = computed(() => {
   const inputAmount = parseFloat(amountIn.value)
 
   if (balance <= 0) return t('swap.nofund')
-  if (inputAmount > balance) {
+  if (inputAmount >=balance) {
     console.log(11)
     return t('swap.nofund')
   }
   // if(amountIn.value=='') return 1
   return ''
 })
-
+function trimTrailingZeros(valueStr) {
+  return String(valueStr).replace(/\.?0+$/, '')
+}
 const doSwapprohibitSwap = computed(() => disableReason.value !== '')
 
 const showModal = ref(false)
@@ -209,34 +213,34 @@ const fromIcon = computed(() => {
   return acc ? getIconUrl(acc.icon) : ''
 })
 function handleSelect(token) {
+  const selectedSymbol = token.symbol
+  const state = current.value
 
-  var state = current.value
-  if (state == 1) {
-    // if(toSymbol.value==token.symbol) {
-    //   ElMessage({
-    //     message: "Swapping the same token is not supported!",
-    //     type: 'error',
-    //     duration: 1000,   // 显示时长，单位毫秒
-    //     showClose: true,  // 显示关闭按钮
-    //   })
-    //   return
-    // }
-    fromSymbol.value = token.symbol
+  if (state === 1) {
+    if (selectedSymbol === toSymbol.value) {
+      // ⚠️ 交换 from ↔ to
+      const temp = fromSymbol.value
+      fromSymbol.value = toSymbol.value
+      toSymbol.value = temp
+      return
+    }
+    fromSymbol.value = selectedSymbol
   }
-  if (state == 2) {
-    // if(fromSymbol.value==token.symbol) {
-    //   ElMessage({
-    //     message: "Swapping the same token is not supported!",
-    //     type: 'error',
-    //     duration: 1000,   // 显示时长，单位毫秒
-    //     showClose: true,  // 显示关闭按钮
-    //   })
-    //   return
-    // }
-    toSymbol.value = token.symbol
+
+  if (state === 2) {
+    if (selectedSymbol === fromSymbol.value) {
+      // ⚠️ 交换 from ↔ to
+      const temp = fromSymbol.value
+      fromSymbol.value = toSymbol.value
+      toSymbol.value = temp
+      return
+    }
+    toSymbol.value = selectedSymbol
   }
 }
+
 function selIcon(state, symbol) {
+
   tokenModalVisible.value = true
   current.value = state
 
@@ -363,15 +367,15 @@ watch(
     if (status.value != "connected") {
       return
     }
-    if (newFrom == newTo) {
-      ElMessage({
-        message: "Swapping the same token is not supported!",
-        type: 'error',
-        duration: 1000,   // 显示时长，单位毫秒
-        showClose: true,  // 显示关闭按钮
-      })
-      return
-    }
+    // if (newFrom == newTo) {
+    //   ElMessage({
+    //     message: "Swapping the same token is not supported!",
+    //     type: 'error',
+    //     duration: 1000,   // 显示时长，单位毫秒
+    //     showClose: true,  // 显示关闭按钮
+    //   })
+    //   return
+    // }
     if (!connected.value) return
     if (!newAmount || Number(newAmount) <= 0) {
       amountOut.value = ''
@@ -422,18 +426,7 @@ watch(
 )
 async function sure() {
   isprocess.value = true
-  var max = fromBalance.value - 0.0001
-  if (amountIn.value > max) {
-   
-    ElMessage({
-      message: `Maximum input: ${max} ${ fromSymbol.value}`,
-      type: 'error',
-      duration: 1000,
-      showClose: true,
-    })
-    isprocess.value = false;
-    return;
-  }
+ 
   // 1️⃣ 检查钱包连接状态
   if (status.value !== 'connected') {
     ElMessage({
@@ -482,7 +475,8 @@ async function sure() {
     // 4️⃣ 处理结果
     if (swapResult.success) {
       ElMessage({
-        message: `Swap Success! TxHash: ${swapResult.txHash}`,
+        message: `Swap Success!`,
+        // message: `Swap Success! TxHash: ${swapResult.txHash}`,
         type: 'success',
         duration: 2000,
         showClose: true
@@ -492,6 +486,7 @@ async function sure() {
       await fetchAllBalancesV6(provider, userAddress.value, allAcconts.value)
     } else {
       ElMessage({
+        // message: swapResult.error || 'Swap failed!',
         message: swapResult.error || 'Swap failed!',
         type: 'error',
         duration: 2000,
@@ -534,7 +529,7 @@ onMounted(() => {
   background: #121212 url("../../assets/faucet_bg.png") no-repeat;
   background-size: 100% 100%;
   width: 100vw;
-  height: 120vh;
+  height: 100vh;
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
@@ -544,8 +539,9 @@ onMounted(() => {
   .contents {
     // background: red;
     padding-top: 80px;
-    height: 100vh;
+    // height: 100vh;
     // width: h;
+    
   }
 
   h1 {
@@ -635,15 +631,17 @@ input[type="number"] {
         background: #151517;
         padding: 8px 12px;
         cursor: pointer;
-
+      // width: 81px;
+      justify-content: center;
         img {
           width: 16px;
-          margin: 0 8px;
+          margin: 0 2px;
         }
 
         span {
           color: #fff;
           font-size: 12px;
+          margin: 0  2px;
         }
       }
 
@@ -668,13 +666,13 @@ input[type="number"] {
     justify-content: center;
     position: absolute;
     width: calc(100% - 32px);
-    top: 125px;
+    top: 125.4px;
     // bottom: 0px;
     // transform: translateY(-50%);
 
     .swap-switch-btn {
-      background: #18191d;
-      border: 3px solid #23262f;
+      border: 1px solid #2E2F32;
+background: #1E1E1E;
       border-radius: 50%;
 
       width: 48px;
@@ -733,6 +731,18 @@ input[type="number"] {
       color: #1A1E1D;
       cursor: pointer;
       opacity: 1;
+    }
+  }
+}
+
+
+@media (max-width: 768px) {  
+  #container  {
+    width:  calc(100vw - 30px );
+    padding: 0   15px;
+    h1  {
+      font-size: 24px;
+      margin-bottom: 24px;
     }
   }
 }

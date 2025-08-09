@@ -40,9 +40,11 @@
         <div class="swap-switch-row" @click="reverseToken">
           <div class="swap-switch-btn">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-  <path d="M5 9L8 6M8 6L11 9M8 6V18" stroke="#00CE7A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M19 15L16 18M16 18L13 15M16 18L16 6" stroke="#00CE7A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
+              <path d="M5 9L8 6M8 6L11 9M8 6V18" stroke="#00CE7A" stroke-width="1.5" stroke-linecap="round"
+                stroke-linejoin="round" />
+              <path d="M19 15L16 18M16 18L13 15M16 18L16 6" stroke="#00CE7A" stroke-width="1.5" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
           </div>
         </div>
         <!-- 购买 -->
@@ -93,15 +95,14 @@
 
         </div>
         <button class="swap-main-btn" @click="sure()"
-       
-          :disabled="isprocess || doSwapprohibitSwap || (amountIn == '') || isestimateQuote||(amountIn>=fromBalance)">
+          :disabled="isprocess || doSwapprohibitSwap || (amountIn == '') || isestimateQuote || (amountIn >= fromBalance)">
           <img src="./loading.svg" alt="" style="width: 30px;
             animation: rotate 5s linear infinite;" v-if="isprocess">
           <span v-else>
             {{ disableReason || $t('swap.doswaps') }}
           </span>
 
-         
+
         </button>
         <!-- <div style="text-align:left;color:rgb(56, 232, 153);font-size:14px;margin:8px 0;">
           {{ $t('swap.rate') }}: 1 {{ fromSymbol }} ≈
@@ -132,9 +133,69 @@ import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { getWalletClient } from '@wagmi/core'
 const { t } = useI18n()
-import { useEthersProvider } from './useEthersProvider.js'
 
-import { useChainId, useConnect, useDisconnect, useAccount, } from '@wagmi/vue'
+
+import {
+  useChainId, useConnect, useDisconnect, useAccount, 
+  useWriteContract,
+  useReadContract,
+  useWaitForTransactionReceipt
+} from '@wagmi/vue'
+// const transactionHash = ref(null)
+// const approveHash = ref(null)
+const { writeContractAsync } = useWriteContract()
+const readContract = useReadContract()
+const readContractAsync = readContract.refetch
+const txHash = ref('')
+const approvalHash = ref('')
+const setTxHash = (hash) => {
+  txHash.value = hash
+  transactionHash.value = hash  // 设置useWaitForTransactionReceipt监听的变量
+  console.log('🎯 交易哈希:', hash)
+}
+
+// 授权哈希处理函数
+const setApprovalHash = (hash) => {
+  approvalHash.value = hash
+  approveHash.value = hash  // 设置useWaitForTransactionReceipt监听的变量
+  console.log('🔐 授权哈希:', hash)
+}
+const transactionHash = ref(null)
+const approveHash = ref(null)
+
+// 监听交易确认状态
+const { isSuccess: txSuccess, isLoading: txLoading } = useWaitForTransactionReceipt({
+  hash: computed(() => transactionHash.value),
+  enabled: computed(() => !!transactionHash.value),
+})
+
+const { isSuccess: approveSuccess, isLoading: approveLoading } = useWaitForTransactionReceipt({
+  hash: computed(() => approveHash.value),
+  enabled: computed(() => !!approveHash.value),
+})
+// ...
+// 监听交易成功后刷新余额
+watch(txSuccess, async (success) => {
+  if (success) {
+    console.log('✅ 交易已确认，刷新余额')
+    await fetchAllBalancesV6(provider, userAddress.value, allAcconts.value)
+    amountIn.value = ''
+  amountOut.value = ''
+  eventBus.emit('custom-event', '发送的数据')
+    ElMessage.success('✅ Swap 成功，余额已更新')
+    transactionHash.value = null // 重置状态
+  }
+})
+
+watch(approveSuccess, (success) => {
+  if (success) {
+    console.log('✅ 授权已确认')
+    // ElMessage.success('✅ Approve 成功')
+    approveHash.value = null // 重置状态
+  }
+})
+
+
 const { connect, connectors, error } = useConnect();
 const { address, status } = useAccount()
 import { eventBus } from '../../utils/eventBus'
@@ -175,7 +236,7 @@ const disableReason = computed(() => {
   const inputAmount = parseFloat(amountIn.value)
 
   if (balance <= 0) return t('swap.nofund')
-  if (inputAmount >=balance) {
+  if (inputAmount >= balance) {
     console.log(11)
     return t('swap.nofund')
   }
@@ -309,11 +370,12 @@ async function connectWallet() {
 
     // const rpcUrl = 'https://cpchain.com' // 或其他 JSON-RPC 地址
     // provider =  new JsonRpcProvider('https://rpc-testnet.cpchain.com', 86606)
-    provider = new BrowserProvider(window.ethereum)
+    provider = new JsonRpcProvider('https://rpc-testnet.cpchain.com', 86606)
     // await provider.send('eth_requestAccounts', [])
 
-    signer = await provider.getSigner()
-    userAddress.value = await signer.getAddress()
+    // signer = await provider.getSigner()
+    userAddress.value = address.value
+    // userAddress.value = await signer.getAddress()
     connected.value = true
     var result = await fetchAllBalancesV6(provider, userAddress.value, allAcconts.value)
     console.log(result)
@@ -367,15 +429,7 @@ watch(
     if (status.value != "connected") {
       return
     }
-    // if (newFrom == newTo) {
-    //   ElMessage({
-    //     message: "Swapping the same token is not supported!",
-    //     type: 'error',
-    //     duration: 1000,   // 显示时长，单位毫秒
-    //     showClose: true,  // 显示关闭按钮
-    //   })
-    //   return
-    // }
+
     if (!connected.value) return
     if (!newAmount || Number(newAmount) <= 0) {
       amountOut.value = ''
@@ -388,7 +442,7 @@ watch(
       toSymbol: newTo,
       amountIn: newAmount,
       slippageInput: newSlippage,
-      signer
+      provider
     })
     if (quote && quote.trade) {
       amountOut.value = Number(quote.outputAmount).toFixed(6)
@@ -399,7 +453,7 @@ watch(
     const { fromReserve, toReserve } = await getPoolReserves({
       fromSymbol: newFrom,
       toSymbol: newTo,
-      signer
+      provider
     })
     console.log(`${newFrom}池子储备:`, fromReserve)
     console.log(`${newTo} 池子储备:`, toReserve)
@@ -424,9 +478,12 @@ watch(
     isestimateQuote.value = false
   }
 )
+
+
+
 async function sure() {
   isprocess.value = true
- 
+
   // 1️⃣ 检查钱包连接状态
   if (status.value !== 'connected') {
     ElMessage({
@@ -440,70 +497,43 @@ async function sure() {
   }
 
   // 2️⃣ 合约构造：非原生币才构造 fromTokenContract
-  let fromTokenContract = null
-  const isNative = fromTokens.value?.symbol === 'CP' || fromTokens.value?.isNative
-  if (!isNative) {
-    if (!fromTokens.value || !fromTokens.value.address) {
-      ElMessage({
-        message: 'From token address is missing!',
-        type: 'error',
-      })
-      isprocess.value = false
-      return
-    }
+  
 
-    fromTokenContract = new Contract(fromTokens.value.address, ERC20_ABI, signer)
-  }
-
-  // 3️⃣ 调用 swap
   try {
-    const swapResult = await doSwaps({
+   
+    
+    const result = await doSwaps({
       fromToken: fromTokens.value,
       toToken: toTokens.value,
       amountIn: amountIn.value,
       slippageInput: slippageInput.value,
       trade: trade.value,
-      userAddress: userAddress.value,
-      signer,
-      routerAddress: routerAddress, // ✅ CPChain Router 地址
-      fromTokenContract,
+      userAddress: address.value,
+      routerAddress: routerAddress,
       decimals: decimals.value,
-      wcpAddress: wethAddress, // ✅ CPChain WCP 地址
-      nativeSymbol: 'CP' // ✅ 设置 native coin symbol 为 CP
+      wcpAddress: wethAddress,
+      nativeSymbol: 'CP',
+      readContractAsync,
+      writeContractAsync,
+      setTxHash,
+      setApprovalHash,
+      useExactApproval: true
     })
-
-    // 4️⃣ 处理结果
-    if (swapResult.success) {
-      ElMessage({
-        message: `Swap Success!`,
-        // message: `Swap Success! TxHash: ${swapResult.txHash}`,
-        type: 'success',
-        duration: 2000,
-        showClose: true
-      })
-
-      // 刷新钱包余额
-      await fetchAllBalancesV6(provider, userAddress.value, allAcconts.value)
+    
+    if (result.success) {
+      // await fetchAllBalancesV6(provider, userAddress.value, allAcconts.value)
     } else {
-      ElMessage({
-        // message: swapResult.error || 'Swap failed!',
-        message: swapResult.error || 'Swap failed!',
-        type: 'error',
-        duration: 2000,
-        showClose: true
-      })
+      console.error('❌ 交换失败:', result.error)
     }
-  } catch (err) {
-    ElMessage({
-      message: `Swap exception: ${err.message || err}`,
-      type: 'error',
-      duration: 2000,
-      showClose: true
-    })
+    
+  } catch (error) {
+    console.error('❌ 交换过程中出错:', error)
+  } finally {
+    // isSwapping.value = false
   }
-  amountIn.value = ''
-  amountOut.value = ''
-  eventBus.emit('custom-event', '发送的数据')
+  // 3️⃣ 调用 swap
+ 
+  
   isprocess.value = false
 }
 
@@ -541,7 +571,7 @@ onMounted(() => {
     padding-top: 80px;
     // height: 100vh;
     // width: h;
-    
+
   }
 
   h1 {
@@ -631,8 +661,9 @@ input[type="number"] {
         background: #151517;
         padding: 8px 12px;
         cursor: pointer;
-      // width: 81px;
-      justify-content: center;
+        // width: 81px;
+        justify-content: center;
+
         img {
           width: 16px;
           margin: 0 2px;
@@ -641,7 +672,7 @@ input[type="number"] {
         span {
           color: #fff;
           font-size: 12px;
-          margin: 0  2px;
+          margin: 0 2px;
         }
       }
 
@@ -672,7 +703,7 @@ input[type="number"] {
 
     .swap-switch-btn {
       border: 1px solid #2E2F32;
-background: #1E1E1E;
+      background: #1E1E1E;
       border-radius: 50%;
 
       width: 48px;
@@ -734,11 +765,14 @@ background: #1E1E1E;
     }
   }
 }
-@media (max-width: 768px) {  
-  #container  {
-    width:  calc(100vw - 30px );
-    padding: 0   15px;
-    h1  {
+
+
+@media (max-width: 768px) {
+  #container {
+    width: calc(100vw - 30px);
+    padding: 0 15px;
+
+    h1 {
       font-size: 24px;
       margin-bottom: 24px;
     }
