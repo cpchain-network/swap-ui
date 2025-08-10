@@ -182,7 +182,7 @@ watch(txSuccess, async (success) => {
     amountIn.value = ''
   amountOut.value = ''
   eventBus.emit('custom-event', '发送的数据')
-    ElMessage.success('✅ Swap 成功，余额已更新')
+    ElMessage.success(' Swap success!')
     transactionHash.value = null // 重置状态
   }
 })
@@ -517,7 +517,7 @@ async function sure() {
       writeContractAsync,
       setTxHash,
       setApprovalHash,
-      useExactApproval: true
+      useExactApproval:true
     })
     
     if (result.success) {
