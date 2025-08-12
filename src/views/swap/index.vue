@@ -132,6 +132,8 @@ import cpIcon from "@/assets/coin/cp.svg"
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { getWalletClient } from '@wagmi/core'
+import { readContract,estimateFeesPerGas } from '@wagmi/core'
+import { config } from '../../wagmi.ts'
 const { t } = useI18n()
 
 
@@ -143,9 +145,13 @@ import {
 } from '@wagmi/vue'
 // const transactionHash = ref(null)
 // const approveHash = ref(null)
-const { writeContractAsync } = useWriteContract()
-const readContract = useReadContract()
-const readContractAsync = readContract.refetch
+
+// const readContract = useReadContract()
+// const readContractAsync = readContract.refetch
+
+
+
+
 const txHash = ref('')
 const approvalHash = ref('')
 const setTxHash = (hash) => {
@@ -182,8 +188,11 @@ watch(txSuccess, async (success) => {
     amountIn.value = ''
   amountOut.value = ''
   eventBus.emit('custom-event', '发送的数据')
-    ElMessage.success('✅ Swap 成功，余额已更新')
+    ElMessage.success(' Swap succes！')
     transactionHash.value = null // 重置状态
+    isprocess.value = false
+  }else{
+    isprocess.value = false
   }
 })
 
@@ -200,7 +209,8 @@ const { connect, connectors, error } = useConnect();
 const { address, status } = useAccount()
 import { eventBus } from '../../utils/eventBus'
 
-
+import VConsole from 'vconsole';
+const vConsole = new VConsole();
 // const { connector } = useAccount()
 // console.log(connector)
 
@@ -347,6 +357,7 @@ function reverseToken() {
   const tempAmount = amountIn.value
   amountIn.value = amountOut.value
   amountOut.value = tempAmount
+  
 }
 const amountIn = ref()
 const slippageInput = ref(0.5)
@@ -513,20 +524,23 @@ async function sure() {
       decimals: decimals.value,
       wcpAddress: wethAddress,
       nativeSymbol: 'CP',
-      readContractAsync,
-      writeContractAsync,
+     
       setTxHash,
       setApprovalHash,
-      useExactApproval: true
+      useExactApproval: true,
+      chainId:86606
     })
     
     if (result.success) {
+      
       // await fetchAllBalancesV6(provider, userAddress.value, allAcconts.value)
     } else {
+      isprocess.value = false
       console.error('❌ 交换失败:', result.error)
     }
     
   } catch (error) {
+    isprocess.value = false
     console.error('❌ 交换过程中出错:', error)
   } finally {
     // isSwapping.value = false
@@ -534,7 +548,7 @@ async function sure() {
   // 3️⃣ 调用 swap
  
   
-  isprocess.value = false
+ 
 }
 
 watch(

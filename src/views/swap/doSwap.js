@@ -1,9 +1,129 @@
-import { parseGwei, parseUnits } from 'viem'
+import { parseGwei, parseUnits, encodeFunctionData } from 'viem'
 import { Percent } from '@uniswap/sdk-core'
 import { ElMessage } from 'element-plus'
+import { readContract, estimateFeesPerGas, estimateGas, writeContract } from '@wagmi/core'
+import { config } from '../../wagmi.ts'
 
 // 手动定义 maxUint256
 const maxUint256 = BigInt('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff')
+
+// Router ABI 定义
+const routerAbi = [
+  {
+    name: 'swapExactTokensForTokens',
+    type: 'function',
+    inputs: [
+      { name: 'amountIn', type: 'uint256' },
+      { name: 'amountOutMin', type: 'uint256' },
+      { name: 'path', type: 'address[]' },
+      { name: 'to', type: 'address' },
+      { name: 'deadline', type: 'uint256' }
+    ],
+    outputs: [{ name: 'amounts', type: 'uint256[]' }]
+  },
+  {
+    name: 'swapExactETHForTokens',
+    type: 'function',
+    stateMutability: 'payable',
+    inputs: [
+      { name: 'amountOutMin', type: 'uint256' },
+      { name: 'path', type: 'address[]' },
+      { name: 'to', type: 'address' },
+      { name: 'deadline', type: 'uint256' }
+    ],
+    outputs: [{ name: 'amounts', type: 'uint256[]' }]
+  },
+  {
+    name: 'swapExactTokensForETH',
+    type: 'function',
+    inputs: [
+      { name: 'amountIn', type: 'uint256' },
+      { name: 'amountOutMin', type: 'uint256' },
+      { name: 'path', type: 'address[]' },
+      { name: 'to', type: 'address' },
+      { name: 'deadline', type: 'uint256' }
+    ],
+    outputs: [{ name: 'amounts', type: 'uint256[]' }]
+  }
+]
+
+// ERC20 ABI 定义
+const erc20Abi = [
+  {
+    name: 'allowance',
+    type: 'function',
+    inputs: [
+      { name: 'owner', type: 'address' },
+      { name: 'spender', type: 'address' }
+    ],
+    outputs: [{ name: '', type: 'uint256' }]
+  },
+  {
+    name: 'approve',
+    type: 'function',
+    inputs: [
+      { name: 'spender', type: 'address' },
+      { name: 'amount', type: 'uint256' }
+    ],
+    outputs: [{ name: '', type: 'bool' }]
+  }
+]
+/**
+ * 精确的 gas 预估函数
+ */
+async function computedGas(abi, functionName, args, to, account, value = undefined) {
+  try {
+    // Calculate gas fees
+    const feesPerGas = await estimateFeesPerGas(config)
+
+    // Estimate gas for the transaction
+    const gas = await estimateGas(config, {
+      data: encodeFunctionData({
+        abi,
+        functionName,
+        args,
+      }),
+      to: to,
+      account: account,
+      maxFeePerGas: feesPerGas.maxFeePerGas,
+      maxPriorityFeePerGas: feesPerGas.maxPriorityFeePerGas,
+      ...(value && { value })
+    })
+
+    // 打印预估gas值
+    console.log('⛽ Gas Estimation:', {
+      functionName,
+      estimatedGas: gas.toString(),
+      maxFeePerGas: feesPerGas.maxFeePerGas.toString(),
+      maxPriorityFeePerGas: feesPerGas.maxPriorityFeePerGas.toString(),
+      totalMaxCost: (gas * feesPerGas.maxFeePerGas).toString() + ' wei'
+    })
+
+    return {
+      gas,
+      maxFeePerGas: feesPerGas.maxFeePerGas,
+      maxPriorityFeePerGas: feesPerGas.maxPriorityFeePerGas
+    }
+  } catch (error) {
+    console.error('Gas estimation failed:', error)
+    // 回退到默认值
+    const fallbackGas = {
+      gas: BigInt(2000000),
+      maxFeePerGas: parseGwei('20'),
+      maxPriorityFeePerGas: parseGwei('2')
+    }
+
+    console.log('⛽ Gas Estimation (Fallback):', {
+      functionName,
+      estimatedGas: fallbackGas.gas.toString(),
+      maxFeePerGas: fallbackGas.maxFeePerGas.toString(),
+      maxPriorityFeePerGas: fallbackGas.maxPriorityFeePerGas.toString(),
+      note: 'Using fallback values due to estimation failure'
+    })
+
+    return fallbackGas
+  }
+}
 
 /**
  * Unified doSwaps supporting CP native coin or ERC20 CP token on cp chain.
@@ -21,8 +141,7 @@ export async function doSwaps({
   decimals,
   wcpAddress,       // 👈 CP 链上的 Wrapped CP 地址
   nativeSymbol = 'CP', // 👈 原生币符号
-  readContractAsync,   // 👈 来自 wagmi 的 readContractAsync
-  writeContractAsync,  // 👈 来自 wagmi 的 writeContractAsync
+
   setTxHash,          // 👈 设置交易哈希的回调
   setApprovalHash,    // 👈 设置授权哈希的回调
   useExactApproval = true // 👈 是否使用精确授权（减少钱包警告）
@@ -46,9 +165,6 @@ export async function doSwaps({
     if (!trade) throw new Error('No valid Trade object')
     if (!fromToken || !toToken) throw new Error('Token not defined')
     if (!userAddress || !routerAddress) throw new Error('Incomplete params')
-    if (!readContractAsync || !writeContractAsync) {
-      throw new Error('wagmi hooks not provided')
-    }
 
     console.log('🔄 Starting swap:', {
       from: fromToken.symbol,
@@ -79,85 +195,36 @@ export async function doSwaps({
       slippagePercent: slippageDecimal
     })
 
-    // Router ABI 定义
-    const routerAbi = [
-      {
-        name: 'swapExactTokensForTokens',
-        type: 'function',
-        inputs: [
-          { name: 'amountIn', type: 'uint256' },
-          { name: 'amountOutMin', type: 'uint256' },
-          { name: 'path', type: 'address[]' },
-          { name: 'to', type: 'address' },
-          { name: 'deadline', type: 'uint256' }
-        ],
-        outputs: [{ name: 'amounts', type: 'uint256[]' }]
-      },
-      {
-        name: 'swapExactETHForTokens',
-        type: 'function',
-        stateMutability: 'payable',
-        inputs: [
-          { name: 'amountOutMin', type: 'uint256' },
-          { name: 'path', type: 'address[]' },
-          { name: 'to', type: 'address' },
-          { name: 'deadline', type: 'uint256' }
-        ],
-        outputs: [{ name: 'amounts', type: 'uint256[]' }]
-      },
-      {
-        name: 'swapExactTokensForETH',
-        type: 'function',
-        inputs: [
-          { name: 'amountIn', type: 'uint256' },
-          { name: 'amountOutMin', type: 'uint256' },
-          { name: 'path', type: 'address[]' },
-          { name: 'to', type: 'address' },
-          { name: 'deadline', type: 'uint256' }
-        ],
-        outputs: [{ name: 'amounts', type: 'uint256[]' }]
-      }
-    ]
 
-    // ERC20 ABI 定义
-    const erc20Abi = [
-      {
-        name: 'allowance',
-        type: 'function',
-        inputs: [
-          { name: 'owner', type: 'address' },
-          { name: 'spender', type: 'address' }
-        ],
-        outputs: [{ name: '', type: 'uint256' }]
-      },
-      {
-        name: 'approve',
-        type: 'function',
-        inputs: [
-          { name: 'spender', type: 'address' },
-          { name: 'amount', type: 'uint256' }
-        ],
-        outputs: [{ name: '', type: 'bool' }]
-      }
-    ]
 
     // 1️⃣ Native CP → Token
     if (isNative(fromToken)) {
       if (isNative(toToken)) throw new Error(`${nativeSymbol} to ${nativeSymbol} swap not allowed`)
-      
+
       console.log('🔄 Native to Token swap')
       const path = [wcpAddress, getTokenAddress(toToken)]
       const amountInParsed = parseUnits(amountIn.toString(), 18)
-      
+
       console.log('📋 Native swap params:', {
         path,
         amountIn: amountInParsed.toString(),
         minAmount
       })
-      
-      const hash = await writeContractAsync({
-        address: routerAddress,
+
+      // 精确 gas 预估
+      console.log('⛽ Estimating gas for Native to Token swap...')
+      const gasEstimate = await computedGas(
+        routerAbi,
+        'swapExactETHForTokens',
+        [BigInt(minAmount), path, userAddress, deadline],
+        routerAddress,
+        userAddress,
+        amountInParsed
+      )
+
+      const hash = await writeContract(config, {
         abi: routerAbi,
+        address: routerAddress,
         functionName: 'swapExactETHForTokens',
         args: [
           BigInt(minAmount),
@@ -166,64 +233,79 @@ export async function doSwaps({
           deadline
         ],
         value: amountInParsed,
-       gas:  BigInt(850000)
+        gas: gasEstimate.gas,
+        maxFeePerGas: gasEstimate.maxFeePerGas,
+        maxPriorityFeePerGas: gasEstimate.maxPriorityFeePerGas
       })
-      
+
       txHash = hash
       setTxHash && setTxHash(hash)
       console.log('✅ Native swap submitted:', hash)
     }
-    
+
     // 2️⃣ Token → Native CP
     else if (isNative(toToken)) {
       console.log('🔄 Token to Native swap')
       const fromTokenAddress = getTokenAddress(fromToken)
       const path = [fromTokenAddress, wcpAddress]
       const amountInParsed = parseUnits(amountIn.toString(), decimals)
-      
+
       console.log('📋 Token to Native params:', {
         fromToken: fromTokenAddress,
         path,
         amountIn: amountInParsed.toString(),
         minAmount
       })
-      
+
       // 检查授权
       try {
         console.log('🔍 Checking allowance...')
-        const { data: allowanceResult } = await readContractAsync({
+        const allowanceResult = await readContract(config, {
           address: fromTokenAddress,
           abi: erc20Abi,
           functionName: 'allowance',
           args: [userAddress, routerAddress]
         })
-        
+
         const allowance = BigInt(allowanceResult || 0)
         const amountInBigInt = BigInt(amountInParsed)
-        
+
         console.log('💰 Allowance check:', {
           current: allowance.toString(),
           required: amountInBigInt.toString(),
           needsApproval: allowance < amountInBigInt
         })
-        
+
         if (allowance < amountInBigInt) {
           // 根据配置选择授权金额
           const approvalAmount = useExactApproval ? amountInBigInt : maxUint256
-          
+
           console.log('📝 Submitting approval for:', approvalAmount.toString())
-          const approveHash = await writeContractAsync({
-            address: fromTokenAddress,
+
+          // 精确 gas 预估 - 授权
+          console.log('⛽ Estimating gas for Token approval...')
+          const approveGasEstimate = await computedGas(
+            erc20Abi,
+            'approve',
+            [routerAddress, approvalAmount],
+            fromTokenAddress,
+            userAddress
+          )
+
+          const approveHash = await writeContract(config, {
             abi: erc20Abi,
+            address: fromTokenAddress,
             functionName: 'approve',
             args: [routerAddress, approvalAmount],
-           gas:  BigInt(850000)
+            gas: approveGasEstimate.gas,
+            maxFeePerGas: approveGasEstimate.maxFeePerGas,
+            maxPriorityFeePerGas: approveGasEstimate.maxPriorityFeePerGas
           })
-          
+
           setApprovalHash && setApprovalHash(approveHash)
           didApprove = true
           console.log('✅ Approval submitted:', approveHash)
-          
+
           // 显示授权提示
           ElMessage({
             message: 'Approval submitted, waiting for confirmation...',
@@ -235,16 +317,27 @@ export async function doSwaps({
       } catch (e) {
         console.error('❌ Approval error:', e)
         if (e.message && e.message.includes('User rejected')) {
-          throw new Error('用户取消了授权操作')
+          throw new Error('User cancelled the authorization operation')
         }
         throw new Error('Failed to check/set allowance: ' + (e.message || e))
       }
-      
+
       // 执行交换
       console.log('🔄 Submitting swap transaction...')
-      const hash = await writeContractAsync({
-        address: routerAddress,
+
+      // 精确 gas 预估 - 交换
+      console.log('⛽ Estimating gas for Token to Native swap...')
+      const swapGasEstimate = await computedGas(
+        routerAbi,
+        'swapExactTokensForETH',
+        [amountInParsed, BigInt(minAmount), path, userAddress, deadline],
+        routerAddress,
+        userAddress
+      )
+
+      const hash = await writeContract(config, {
         abi: routerAbi,
+        address: routerAddress,
         functionName: 'swapExactTokensForETH',
         args: [
           amountInParsed,
@@ -253,23 +346,25 @@ export async function doSwaps({
           userAddress,
           deadline
         ],
-       gas:  BigInt(850000)
+        gas: swapGasEstimate.gas,
+        maxFeePerGas: swapGasEstimate.maxFeePerGas,
+        maxPriorityFeePerGas: swapGasEstimate.maxPriorityFeePerGas
       })
-      
+
       txHash = hash
       setTxHash && setTxHash(hash)
       console.log('✅ Token to Native swap submitted:', hash)
     }
-    
+
     // 3️⃣ ERC20 → ERC20
     else {
       console.log('🔄 ERC20 to ERC20 swap')
       const fromTokenAddress = getTokenAddress(fromToken)
       const toTokenAddress = getTokenAddress(toToken)
-      
+
       const path = [fromTokenAddress, toTokenAddress]
       const amountInParsed = parseUnits(amountIn.toString(), decimals)
-      
+
       console.log('📋 ERC20 to ERC20 params:', {
         fromToken: fromTokenAddress,
         toToken: toTokenAddress,
@@ -277,43 +372,56 @@ export async function doSwaps({
         amountIn: amountInParsed.toString(),
         minAmount
       })
-      
+
       // 检查授权
       try {
         console.log('🔍 Checking allowance...')
-        const { data: allowanceResult } = await readContractAsync({
+        const allowanceResult = await readContract(config, {
           address: fromTokenAddress,
           abi: erc20Abi,
           functionName: 'allowance',
           args: [userAddress, routerAddress]
         })
-        
+
         const allowance = BigInt(allowanceResult || 0)
         const amountInBigInt = BigInt(amountInParsed)
-        
+
         console.log('💰 Allowance check:', {
           current: allowance.toString(),
           required: amountInBigInt.toString(),
           needsApproval: allowance < amountInBigInt
         })
-        
+
         if (allowance < amountInBigInt) {
           // 根据配置选择授权金额
           const approvalAmount = useExactApproval ? amountInBigInt : maxUint256
-          
+
           console.log('📝 Submitting approval for:', approvalAmount.toString())
-          const approveHash = await writeContractAsync({
-            address: fromTokenAddress,
+
+          // 精确 gas 预估 - 授权
+          console.log('⛽ Estimating gas for ERC20 approval...')
+          const approveGasEstimate = await computedGas(
+            erc20Abi,
+            'approve',
+            [routerAddress, approvalAmount],
+            fromTokenAddress,
+            userAddress
+          )
+
+          const approveHash = await writeContract(config, {
             abi: erc20Abi,
+            address: fromTokenAddress,
             functionName: 'approve',
             args: [routerAddress, approvalAmount],
-           gas:  BigInt(850000)
+            gas: approveGasEstimate.gas,
+            maxFeePerGas: approveGasEstimate.maxFeePerGas,
+            maxPriorityFeePerGas: approveGasEstimate.maxPriorityFeePerGas
           })
-          
+
           setApprovalHash && setApprovalHash(approveHash)
           didApprove = true
           console.log('✅ Approval submitted:', approveHash)
-          
+
           // 显示授权提示
           ElMessage({
             message: 'Approval submitted, waiting for confirmation...',
@@ -324,17 +432,29 @@ export async function doSwaps({
         }
       } catch (e) {
         console.error('❌ Approval error:', e)
+
         if (e.message && e.message.includes('User rejected')) {
-          throw new Error('用户取消了授权操作')
+          throw new Error('User cancelled the authorization operation')
         }
         throw new Error('Failed to check/set allowance: ' + (e.message || e))
       }
-      
+
       // 执行交换
       console.log('🔄 Submitting swap transaction...')
-      const hash = await writeContractAsync({
-        address: routerAddress,
+
+      // 精确 gas 预估 - 交换
+      console.log('⛽ Estimating gas for ERC20 to ERC20 swap...')
+      const swapGasEstimate = await computedGas(
+        routerAbi,
+        'swapExactTokensForTokens',
+        [amountInParsed, BigInt(minAmount), path, userAddress, deadline],
+        routerAddress,
+        userAddress
+      )
+
+      const hash = await writeContract(config, {
         abi: routerAbi,
+        address: routerAddress,
         functionName: 'swapExactTokensForTokens',
         args: [
           amountInParsed,
@@ -343,19 +463,21 @@ export async function doSwaps({
           userAddress,
           deadline
         ],
-       gas:  BigInt(850000)
+        gas: swapGasEstimate.gas,
+        maxFeePerGas: swapGasEstimate.maxFeePerGas,
+        maxPriorityFeePerGas: swapGasEstimate.maxPriorityFeePerGas
       })
-      
+
       txHash = hash
       setTxHash && setTxHash(hash)
       console.log('✅ ERC20 to ERC20 swap submitted:', hash)
     }
 
     console.log('✅ Swap transaction submitted successfully')
-    
-    return { 
-      success: true, 
-      txHash, 
+
+    return {
+      success: true,
+      txHash,
       didApprove,
       message: 'Transaction submitted successfully'
     }
@@ -369,7 +491,7 @@ export async function doSwaps({
       toToken: toToken?.symbol,
       amountIn
     })
-    
+
     // 根据错误类型显示不同消息
     if (e.message && e.message.includes('User rejected')) {
       ElMessage({
@@ -378,7 +500,7 @@ export async function doSwaps({
         duration: 2000,
         showClose: true
       })
-      error = '用户取消了交易操作'
+      error = 'User cancelled the transaction operation'
     } else if (e.message && e.message.includes('insufficient funds')) {
       ElMessage({
         message: 'Insufficient funds!',
@@ -386,7 +508,7 @@ export async function doSwaps({
         duration: 2000,
         showClose: true
       })
-      error = '余额不足'
+      error = 'Insufficient balance'
     } else if (e.message && e.message.includes('slippage')) {
       ElMessage({
         message: 'Slippage too high, try increasing slippage tolerance!',
@@ -394,8 +516,18 @@ export async function doSwaps({
         duration: 3000,
         showClose: true
       })
-      error = '滑点过高，请增加滑点容忍度'
-    } else {
+      error = 'Slippage too high, please increase slippage tolerance'
+    }
+    else if (e.message && e.message.includes('User cancelled the authorization operation')) {
+      ElMessage({
+        message: 'User Reject!',
+        type: 'warning',
+        duration: 2000,
+        showClose: true
+      })
+      error = 'User cancelled the transaction operation'
+    }
+    else {
       ElMessage({
         message: 'Swap Fail!',
         type: 'error',
@@ -404,7 +536,7 @@ export async function doSwaps({
       })
       error = 'Swap failed: Please try again later!'
     }
-    
+
     return { success: false, error, details: e.message }
   }
 }

@@ -27,7 +27,7 @@ export const config = createConfig({
   // chains: [mainnet, sepolia, optimism],
   chains:[cpChain],
   connectors: [
-    //  injected({shimDisconnect: true}),
+   injected({shimDisconnect: true}),
     walletConnect({
       projectId: 'f87cf4373910e1766c873dc5df019573',
       qrModalOptions: {
