@@ -19,6 +19,7 @@ const TOKEN_LIST = {
     isNative: true,
     chainId: 86608
   },
+  "JF": new Token(86608, '0xeC8352D242Cb1236c7d2eE0F234EeBb907BDd2bA', 18, 'JF', 'Jellyfish'),
   "WCP": new Token(86608, '0xCF4825F0dCaEAa158310473C1FFF1980Acb5b9F7', 18, 'WCP', 'Wrapped CP'),
   "CPUSDT": new Token(86608, '0xC10F6186Bb3C9E68516D0e2F829f1b95C323d542', 18, 'CPUSDT', 'CpChain CPUSDT'),
   "CPUSDC": new Token(86608, '0xc916dc0d98Bb425dFb300b9f90c7097581862642', 18, 'CPUSDC', 'CpChain CPUSDC')

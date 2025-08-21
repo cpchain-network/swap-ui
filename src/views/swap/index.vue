@@ -110,7 +110,7 @@
             animation: rotate 5s linear infinite;" v-if="tofromprocess">
           <span v-else> {{ rate }}</span>
           {{ toSymbol }}
-         
+
         </div> -->
       </div>
     </div>
@@ -129,6 +129,7 @@ import daiIcon from '@/assets/coin/dai.png'
 import usdtIcon from '@/assets/coin/usdt.png'
 import usdcIcon from '@/assets/coin/usdc.svg'
 import cpIcon from "@/assets/coin/cp.svg"
+import jfIcon from "@/assets/coin/jf.jpg"
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { getWalletClient } from '@wagmi/core'
@@ -230,7 +231,6 @@ const wethAddress = '0xCF4825F0dCaEAa158310473C1FFF1980Acb5b9F7'
 const userAddress = ref('')
 const connected = ref(false)
 const tokenModalVisible = ref(false)
-
 const rate = ref("")
 const isprocess = ref(false)
 const isfromprocess = ref(false)
@@ -340,6 +340,7 @@ function getIconUrl(icon) {
 // ])
 const allAcconts = ref([
   { symbol: 'CP', decimals: 18, token: TOKEN_LIST["CP"], icon: cpIcon, blance: 0, isNative: true, },
+  { symbol: 'JF', decimals: 18, token: TOKEN_LIST["JF"], icon: jfIcon, blance: 0, isNative: false, },
   { symbol: 'CPUSDT', decimals: 18, token: TOKEN_LIST["CPUSDT"], icon: usdtIcon, blance: 0, isNative: false, },
   { symbol: 'CPUSDC', decimals: 18, token: TOKEN_LIST["CPUSDC"], icon: usdcIcon, blance: 0, isNative: false, },
 ])
