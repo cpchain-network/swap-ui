@@ -1,7 +1,5 @@
 import { http, createConfig, createStorage } from '@wagmi/vue'
-// @ts-ignore
-import { injected} from '@wagmi/vue/connectors'
-// @ts-ignore
+import {  walletConnect ,metaMask,injected} from '@wagmi/vue/connectors'
 import { defineChain } from 'viem'
 
 const cpChain = defineChain({
@@ -29,15 +27,19 @@ export const config = createConfig({
   // chains: [mainnet, sepolia, optimism],
   chains:[cpChain],
   connectors: [
-    injected(),
-    // walletConnect({
-    //   projectId: 'f87cf4373910e1766c873dc5df019573',
-    // }),
+   injected({shimDisconnect: true}),
+    walletConnect({
+      projectId: 'f87cf4373910e1766c873dc5df019573',
+      qrModalOptions: {
+        explorerRecommendedWalletIds: 'NONE',
+        enableExplorer: false,
+      },
+    }),
     // coinbaseWallet({ appName: 'Vite Vue Playground', darkMode: true }),
   ],
   storage: createStorage({ storage: localStorage, key: 'vite-vue' }),
   transports: {
-     [cpChain.id]: http('https://rpc.cpchain.com'),
+    [cpChain.id]: http('https://rpc.cpchain.com')
     // [mainnet.id]: http(),
     // [sepolia.id]: http(),
     // [optimism.id]: http(),

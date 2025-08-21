@@ -24,7 +24,6 @@ const TOKEN_LIST = {
   "CPUSDC": new Token(86608, '0xc916dc0d98Bb425dFb300b9f90c7097581862642', 18, 'CPUSDC', 'CpChain CPUSDC')
 }
 
-
 // ✅ 获取 SDK Token 实例
 function getSdkToken(symbol) {
   const token = TOKEN_LIST[symbol]
@@ -45,9 +44,10 @@ function getPairAddress({ tokenA, tokenB }) {
 }
 
 // ✅ 判断 pair 是否存在且有流动性
-async function isPairAvailable(pairAddress, signer) {
+// 修改：provider 参数可以是 JsonRpcProvider 或 signer
+async function isPairAvailable(pairAddress, provider) {
   const abi = ["function getReserves() view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)"]
-  const pair = new Contract(pairAddress, abi, signer)
+  const pair = new Contract(pairAddress, abi, provider)
   try {
     const { reserve0, reserve1 } = await pair.getReserves()
     return BigInt(reserve0) > 0n && BigInt(reserve1) > 0n
@@ -58,24 +58,25 @@ async function isPairAvailable(pairAddress, signer) {
 
 /**
  * 💱 报价计算（含流动性判断）
+ * 修改：provider 参数可以是 JsonRpcProvider 或 signer
  */
 export async function estimateQuotes({
   fromSymbol,
   toSymbol,
   amountIn,
   slippageInput,
-  signer
+  provider // 修改：参数名从 signer 改为 provider，更通用
 }) {
   const fromToken = getSdkToken(fromSymbol)
   const toToken = getSdkToken(toSymbol)
   const pairAddress = getPairAddress({ tokenA: fromToken, tokenB: toToken })
   console.log('[Pair Address]', pairAddress)
 
-  const hasLiquidity = await isPairAvailable(pairAddress, signer)
+  const hasLiquidity = await isPairAvailable(pairAddress, provider)
   if (!hasLiquidity) throw new Error('Pair not deployed or no liquidity')
 
   const pairAbi = ["function getReserves() view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)"]
-  const pairContract = new Contract(pairAddress, pairAbi, signer)
+  const pairContract = new Contract(pairAddress, pairAbi, provider)
   const { reserve0, reserve1 } = await pairContract.getReserves()
 
   const [token0, token1] = fromToken.sortsBefore(toToken)
@@ -113,21 +114,22 @@ export async function estimateQuotes({
 
 /**
  * 📊 查询储备（含是否存在判断）
+ * 修改：provider 参数可以是 JsonRpcProvider 或 signer
  */
 export async function getPoolReserves({
   fromSymbol,
   toSymbol,
-  signer
+  provider // 修改：参数名从 signer 改为 provider，更通用
 }) {
   const fromToken = getSdkToken(fromSymbol)
   const toToken = getSdkToken(toSymbol)
 
   const pairAddress = getPairAddress({ tokenA: fromToken, tokenB: toToken })
-  const hasLiquidity = await isPairAvailable(pairAddress, signer)
+  const hasLiquidity = await isPairAvailable(pairAddress, provider)
   if (!hasLiquidity) return { fromReserve: 0, toReserve: 0 }
 
   const pairAbi = ["function getReserves() view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)"]
-  const pairContract = new Contract(pairAddress, pairAbi, signer)
+  const pairContract = new Contract(pairAddress, pairAbi, provider)
   const { reserve0, reserve1 } = await pairContract.getReserves()
 
   const [token0, token1] = fromToken.sortsBefore(toToken)

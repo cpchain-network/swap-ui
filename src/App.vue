@@ -1,7 +1,7 @@
 
 <script setup>
 import  navBar  from "./components/navBar.vue"
-import   bottomBar  from "@/views/homepage/content/footer/index.vue"
+
 </script>
 
 <template>

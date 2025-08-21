@@ -24,7 +24,7 @@
                         <span style="margin-left: 4px;">
                             {{ $t('swap.basicons') }}
                         </span>
-
+                    
                     </div>
                     <div v-for="token in filteredTokens" :key="token.symbol" class="token-item" @click="select(token)">
                         <img :src="getIcon(token.icon)" class="token-icon" />
@@ -148,7 +148,7 @@ function getIcon(icon) {
         }
     }
 
-
+   
 
     .modal-header {
         display: flex;
@@ -160,19 +160,17 @@ function getIcon(icon) {
         // padding: 0 20px;
         // height: 54px;
     }
-
+  
     .modal-close {
         font-size: 28px;
         cursor: pointer;
         user-select: none;
         line-height: 1;
     }
-
     @media screen and (max-width: 768px) {
         .modal-header {
             font-size: 18px;
         }
-
         .modal-content {
             top: auto;
             bottom: 0;
@@ -182,18 +180,16 @@ function getIcon(icon) {
             // width: auto;
             // max-width: 100%;
             height: 400px;
-            padding: 20px;
+            padding:  20px;
             border-radius: 18px 18px 0 0;
             animation: slideUp 0.25s ease-out;
         }
-
         .modal-close {
-            font-size: 20px;
-            cursor: pointer;
-            user-select: none;
-            line-height: 1;
-        }
-
+        font-size: 20px;
+        cursor: pointer;
+        user-select: none;
+        line-height: 1;
+    }
         @keyframes slideUp {
             from {
                 transform: translateX(-50%) translateY(100%);
@@ -204,7 +200,6 @@ function getIcon(icon) {
             }
         }
     }
-
     .search-box {
         // padding: 0 20px;
         // height: 80px;
@@ -234,10 +229,10 @@ function getIcon(icon) {
     }
 
     .token-list-title {
-
+      
         // padding: 0 20px 5px 20px;
         // height: 35px;
-        color: #8E8E92;
+        color:  #8E8E92;
         text-align: left;
         display: flex;
         //  padding-left: 30px;
