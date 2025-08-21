@@ -371,11 +371,7 @@ async function connectWallet() {
   // const injectedProvider = client.transport?.value?.provider
   // if (!injectedProvider) throw new Error('未找到 provider')
 
-  if (!window.ethereum) {
-
-    error.value = '请先安装MetaMask'
-    return
-  }
+ 
   if (status.value == "connected") {
 
 
