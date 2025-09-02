@@ -131,7 +131,7 @@ import usdcIcon from '@/assets/coin/usdc.svg'
 import cpIcon from "@/assets/coin/cp.svg"
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
-import { getWalletClient } from '@wagmi/core'
+// import { getWalletClient } from '@wagmi/core'
 import { readContract,estimateFeesPerGas } from '@wagmi/core'
 import { config } from '../../wagmi.ts'
 const { t } = useI18n()
