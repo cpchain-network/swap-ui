@@ -148,5 +148,7 @@ export {
   TOKEN_LIST,
   getSdkToken,
   getPairAddress,
-  isPairAvailable
+  isPairAvailable,
+  FACTORY_ADDRESS,
+  INIT_CODE_HASH
 }

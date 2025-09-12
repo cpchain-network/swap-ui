@@ -1,0 +1,323 @@
+<template>
+  <div v-if="visible" class="modal-mask">
+    <div class="modal-box">
+      <div class="modal-title">
+        <span>删除流动性</span>
+        <span class="close-btn" @click="close">×</span>
+      </div>
+      
+      <!-- 百分比选择按钮 -->
+ 
+      
+      <div class="modal-content">
+        <input
+          v-model="displayValue"
+          type="text"
+          class="modal-input"
+          @input="handleInput"
+          @blur="onBlur"
+          @keydown.stop
+          @keypress="onKeyPress"
+          @paste.prevent
+          placeholder="输入LP Token数量"
+          autocomplete="off"
+        />
+        <span class="modal-unit">LP</span>
+      </div>
+      <div class="percentage-buttons">
+        <div 
+          v-for="percent in [10, 50,80, 100]" 
+          :key="percent"
+          :class="['percent-btn', { active: selectedPercent === percent }]"
+          @click="selectPercent(percent)"
+        >
+          {{ percent }}%
+        </div>
+      </div>
+      <div class="balance-info">
+        <span>余额: {{ maxBalance }} LP</span>
+      </div>
+      
+      <div v-if="warn" class="modal-warn">{{ warn }}</div>
+      
+      <button 
+        class="modal-confirm" 
+        @click="confirm"
+        :disabled="!displayValue || parseFloat(displayValue) <= 0"
+      >
+        确认删除
+      </button>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, watch, computed } from 'vue'
+
+const props = defineProps({
+  visible: Boolean,
+  maxBalance: {
+    type: String,
+    default: '0'
+  }
+})
+
+const emits = defineEmits(['close', 'confirm'])
+
+const displayValue = ref('')
+const selectedPercent = ref(null)
+const warn = ref('')
+
+const maxBalanceNum = computed(() => {
+  return parseFloat(props.maxBalance) || 0
+})
+
+watch(() => props.visible, (newVal) => {
+  if (newVal) {
+    displayValue.value = ''
+    selectedPercent.value = null
+    warn.value = ''
+  }
+})
+
+function close() {
+  emits('close')
+}
+
+function selectPercent(percent) {
+  selectedPercent.value = percent
+  const amount = (maxBalanceNum.value * percent / 100).toFixed(6)
+  displayValue.value = trimTrailingZeros(amount)
+  warn.value = ''
+}
+
+function trimTrailingZeros(str) {
+  return str.replace(/\.?0+$/, '')
+}
+
+function handleInput(e) {
+  warn.value = ''
+  selectedPercent.value = null // 手动输入时清除百分比选择
+  
+  let val = e.target.value
+  // 只允许数字和小数点
+  val = val.replace(/[^\d.]/g, '')
+  // 移除开头的0
+  val = val.replace(/^0+(\d)/, '$1')
+  // 处理多个小数点
+  val = val.replace(/\.{2,}/g, '.')
+  val = val.replace('.', '$#$').replace(/\./g, '').replace('$#$', '.')
+  
+  // 限制小数位数
+  const parts = val.split('.')
+  if (parts[1] && parts[1].length > 6) {
+    parts[1] = parts[1].slice(0, 6)
+  }
+  val = parts.join('.')
+  
+  // 检查是否超过最大余额
+  if (val && parseFloat(val) > maxBalanceNum.value) {
+    warn.value = `超过最大余额 ${props.maxBalance} LP`
+    val = String(maxBalanceNum.value)
+  }
+  
+  displayValue.value = val
+}
+
+function onBlur() {
+  let val = displayValue.value
+  if (val === '' || isNaN(Number(val))) {
+    displayValue.value = ''
+    return
+  }
+  
+  let num = Number(val)
+  if (num < 0) {
+    warn.value = '数量不能为负数'
+    num = 0
+  } else if (num > maxBalanceNum.value) {
+    warn.value = `超过最大余额 ${props.maxBalance} LP`
+    num = maxBalanceNum.value
+  }
+  
+  displayValue.value = num > 0 ? trimTrailingZeros(num.toFixed(6)) : ''
+}
+
+function onKeyPress(e) {
+  const char = String.fromCharCode(e.which)
+  if (!/[0-9.]/.test(char)) {
+    e.preventDefault()
+  }
+}
+
+function confirm() {
+  let val = displayValue.value
+  if (val === '' || isNaN(Number(val))) {
+    warn.value = '请输入有效的LP Token数量'
+    return
+  }
+  
+  let num = Number(val)
+  if (num <= 0) {
+    warn.value = 'LP Token数量必须大于0'
+    return
+  }
+  
+  if (num > maxBalanceNum.value) {
+    warn.value = `超过最大余额 ${props.maxBalance} LP`
+    return
+  }
+  
+  emits('confirm', num)
+  emits('close')
+}
+</script>
+
+<style lang="scss" scoped>
+.modal-mask {
+  position: fixed;
+  z-index: 9999;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  .modal-box {
+    background: #151517;
+    border-radius: 16px;
+    min-width: 280px;
+    min-height: 180px;
+    box-shadow: 0 6px 40px #0009;
+    padding: 20px 18px 16px 18px;
+    display: flex;
+    flex-direction: column;
+    
+    .modal-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 15px;
+      color: #fff;
+      margin-bottom: 18px;
+      
+      .close-btn {
+        font-size: 20px;
+        color: #888;
+        cursor: pointer;
+        line-height: 1;
+        
+        &:hover {
+          color: #fff;
+        }
+      }
+    }
+    
+    .percentage-buttons {
+      display: flex;
+      gap: 4px;
+      padding-top: 15px;
+      margin-bottom: 16px;
+      
+      .percent-btn {
+        color: #8E8E92;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        padding: 4px 8px;
+        border-radius: 100px;
+        border: 1px solid #2E2F32;
+        background: transparent;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        flex: 1;
+        
+        &:hover {
+          border-color: #00CE7A;
+          color: #00CE7A;
+        }
+        
+        &.active {
+          border: 1px solid #00CE7A;
+          color: #00CE7A;
+          background: rgba(0, 206, 122, 0.1);
+        }
+      }
+    }
+    
+    .modal-content {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      background: #101012;
+      border-radius: 8px;
+      padding: 0 10px;
+      border: 1px solid #222;
+      
+      .modal-input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: #fff;
+        font-size: 18px;
+        outline: none;
+        padding: 12px 0;
+        text-align: left;
+        
+        &::placeholder {
+          color: #555;
+        }
+      }
+      
+      .modal-unit {
+        color: #555;
+        margin-left: 4px;
+        font-size: 16px;
+      }
+    }
+    
+    .balance-info {
+      color: #888;
+      font-size: 12px;
+      margin-bottom: 10px;
+      text-align: right;
+    }
+    
+    .modal-warn {
+      color: #ffca6f;
+      font-size: 13px;
+      padding: 2px 0 8px 0;
+      min-height: 16px;
+      text-align: left;
+    }
+    
+    .modal-confirm {
+      width: 100%;
+      border-radius: 999px;
+      border: none;
+      height: 38px;
+      background: #14e18d;
+      color: #111;
+      font-weight: bold;
+      font-size: 16px;
+      margin-top: 2px;
+      cursor: pointer;
+      transition: background 0.2s;
+      
+      &:hover:not(:disabled) {
+        background: #00ce7a;
+      }
+      
+      &:disabled {
+        background: #333;
+        color: #666;
+        cursor: not-allowed;
+      }
+    }
+  }
+}
+</style>

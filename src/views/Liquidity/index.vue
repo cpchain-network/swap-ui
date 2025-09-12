@@ -36,14 +36,8 @@
                         <div class="name">{{ fromSymbol }}</div>
                     </div>
                     <div class="middle">
-                        <input 
-                            type="number" 
-                            class="swap-amount-input" 
-                            v-model.trim="amountIn"
-                            @input="onAmountInChange"
-                            :disabled="isCalculating"
-                            placeholder="0.0"
-                        >
+                        <input type="number" class="swap-amount-input" v-model.trim="amountIn" @input="onAmountInChange"
+                            :disabled="isCalculating" placeholder="0.0">
                         <div v-if="isCalculating && independentField === 'INPUT'" class="calculating-indicator">
                             计算中...
                         </div>
@@ -66,14 +60,8 @@
                         <div class="name">{{ toSymbol }}</div>
                     </div>
                     <div class="middle">
-                        <input 
-                            type="number" 
-                            class="swap-amount-input" 
-                            v-model.trim="amountOut"
-                            @input="onAmountOutChange"
-                            :disabled="isCalculating"
-                            placeholder="0.0"
-                        >
+                        <input type="number" class="swap-amount-input" v-model.trim="amountOut" @input="onAmountOutChange"
+                            :disabled="isCalculating" placeholder="0.0">
                         <div v-if="isCalculating && independentField === 'OUTPUT'" class="calculating-indicator">
                             计算中...
                         </div>
@@ -81,8 +69,8 @@
                     <div class="bottom">
                         <div class="left">
                             <div class="percentItem" v-for="(item, index) in percentList" :key="index"
-                                :class="[item == percenttoBalance ? 'active' : 'percentItem']"
-                                @click="toBalanceTab(item)">{{ item }}%</div>
+                                :class="[item == percenttoBalance ? 'active' : 'percentItem']" @click="toBalanceTab(item)">
+                                {{ item }}%</div>
                         </div>
                         <div class="right">
                             余额 {{ trimTrailingZeros(toBalance) }}
@@ -93,13 +81,13 @@
                 <!-- 池子状态信息 -->
                 <div v-if="poolStatus" class="pool-status">
                     <div v-if="poolStatus === 'new'" class="status-new">
-                         您将创建新的流动性池
+                        您将创建新的流动性池
                     </div>
                     <div v-else-if="poolStatus === 'exists'" class="status-exists">
-                         池子已存在，按当前比例添加流动性
+                        池子已存在，按当前比例添加流动性
                     </div>
                     <div v-else-if="poolStatus === 'error'" class="status-error">
-                         获取池子信息失败，请检查网络连接
+                        获取池子信息失败，请检查网络连接
                     </div>
                 </div>
 
@@ -113,12 +101,8 @@
                         </svg>
                     </span>
                 </div>
-                
-                <button 
-                    class="swap-main-btn" 
-                    @click="sure()"
-                    :disabled="!canAddLiquidity"
-                >
+
+                <button class="swap-main-btn" @click="sure()" :disabled="!canAddLiquidity">
                     {{ buttonText }}
                 </button>
             </div>
@@ -130,6 +114,53 @@
 
         <TokenModal :visible="tokenModalVisible" :tokens="allAcconts" @select="handleSelect"
             @close="tokenModalVisible = false" />
+
+
+        <div class="myPosition">
+            <div class="container">
+                <h3>我的仓位</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>池子</th>
+                            <th>token0</th>
+                            <th>token1</th>
+                            <th>APR</th>
+                            <th class="dis">TVL</th>
+                            <th>用户余额</th>
+                            <th>Token0存入</th>
+                            <th>Token1存入</th>
+                            <th>池子百分比</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                        <tr v-for="item  in   userBalances1">
+                            <td>{{ item.name }}</td>
+                            <td>{{ item.token0Symbol == 'WCP' ? 'CP' : item.token0Symbol }}</td>
+                            <td>{{ item.token1Symbol }}</td>
+                            <td>{{ item.apr }}</td>
+                            <td class="dis">{{ item.tvl }}</td>
+
+                            <td>{{ item.userPoolBalance }}</td>
+                            <td>{{ item.token0Deposited }}</td>
+                            <td>{{ item.token1Deposited }}</td>
+                            <td>{{ item.poolTokenPercentage }}</td>
+                            <td>
+
+                                <el-button type="danger" link @click="del(item)">删除</el-button>
+                            </td>
+
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+
+        <RemoveLiquidityModal :visible="showRemoveModal" :max-balance="lpBalance" @close="showRemoveModal = false"
+            @confirm="handleRemoveLiquidity" />
     </div>
 </template>
 
@@ -140,7 +171,7 @@ import usdtIcon from '@/assets/coin/usdt.png'
 import usdcIcon from '@/assets/coin/usdc.svg'
 import { BrowserProvider, Contract, parseUnits, formatUnits, MaxUint256, JsonRpcProvider } from 'ethers'
 import cpIcon from "@/assets/coin/cp.svg"
-
+import RemoveLiquidityModal from './remove.vue'
 import { ref, onMounted, watch, computed, nextTick } from 'vue'
 import SlippageModal from "./SlippageModal.vue"
 import TokenModal from './tokenSelect.vue'
@@ -157,12 +188,26 @@ import {
 // 导入 uniswapQuote.js 中的函数
 import { getPoolReserves, getSdkToken, isPairAvailable, getPairAddress } from '../swap/uniswapQuote.js'
 import doAddLiquidity from './doAddLiquidity.js'
+import { doRemoveLiquidity } from './doRemoveLiquidity.js'
 const { connect, connectors, error } = useConnect();
 const { address, status } = useAccount()
 const current = ref()
+const showRemoveModal = ref(false)
+const lpBalance = ref(0)
+
+const  selItem=ref({})
 const ROUTER_ADDRESS = '0x4cFBbe212366bf31DF01F5188d759c738a757509' // Uniswap V2 Router
 const WRAPPED_CP_ADDRESS = '0xC18eA88732464dc5E38372A7Fb1d30b56Dd0E4d5' // WETH 地
 // 代币配置
+import { CPChainAPRCalculator } from "./lpTokenListManager.js"
+const userBalances1 = ref([])
+// import { generateLPTokenList } from '@/views/Liquidity/lpTokenListManager.js'
+onMounted(async () => {
+    // 创建实例
+   
+})
+
+
 const allAcconts = ref([
     {
         symbol: 'CP', decimals: 18, token:
@@ -177,6 +222,11 @@ const allAcconts = ref([
     { symbol: 'USDT', decimals: 18, token: new Token(86606, '0x6C255b22864bBC176431c42695D16f41576e5618', 18, 'USDT', 'Tether USD'), icon: usdtIcon, blance: 0, isNative: false },
     { symbol: 'USDC', decimals: 18, token: new Token(86606, '0xb884F1C92AF157dD3dcC54512a595b1D9531423d', 18, 'USDC', 'USD//C'), icon: usdcIcon, blance: 0, isNative: false },
 ])
+const  mapAcconts={
+    USDT: new Token(86606, '0x6C255b22864bBC176431c42695D16f41576e5618', 18, 'USDT', 'Tether USD'),
+  USDC: new Token(86606, '0xb884F1C92AF157dD3dcC54512a595b1D9531423d', 18, 'USDC', 'USD//C'),
+  WCP: new Token(86606, '0xC18eA88732464dc5E38372A7Fb1d30b56Dd0E4d5', 18, 'WCP', 'Wrapped CP')
+}
 
 // 基础状态
 const slippageInput = ref(0.5)
@@ -253,7 +303,11 @@ const ERC20_ABI = [
     "function allowance(address owner, address spender) view returns (uint256)",
     "function approve(address spender, uint256 amount) returns (bool)"
 ]
-
+function del(item) {
+    showRemoveModal.value = true
+    lpBalance.value = item.lptokenNum
+    selItem.value = item
+}
 // 防抖函数
 function debounce(func, wait) {
     let timeout
@@ -287,7 +341,7 @@ async function calculateCorrespondingAmount(inputAmount, inputField) {
     try {
         isCalculating.value = true
         calculationError.value = ''
-        
+
         // 获取池子储备量
         const reserves = await getPoolReserves({
             fromSymbol: fromSymbol.value,
@@ -300,7 +354,7 @@ async function calculateCorrespondingAmount(inputAmount, inputField) {
             noLiquidity.value = true
             poolExists.value = false
             poolStatus.value = 'new'
-            
+
             // 新池子情况下，用户可以设置任意比例
             // 不进行自动计算，让用户自由输入
             return
@@ -312,7 +366,7 @@ async function calculateCorrespondingAmount(inputAmount, inputField) {
 
         // 基于池子比例计算
         const ratio = reserves.toReserve / reserves.fromReserve
-        
+
         if (inputField === 'INPUT') {
             // 用户输入了 fromToken 数量，计算 toToken 数量
             const calculatedAmount = parseFloat(inputAmount) * ratio
@@ -370,7 +424,7 @@ function fromBalanceTab(item) {
     percentfromBalance.value = item
     const calculatedAmount = parseFloat(fromBalance.value) * item / 100
     amountIn.value = calculatedAmount.toFixed(6)
-    
+
     // 触发计算
     independentField.value = 'INPUT'
     debouncedCalculateFromInput(amountIn.value)
@@ -380,7 +434,7 @@ function toBalanceTab(item) {
     percenttoBalance.value = item
     const calculatedAmount = parseFloat(toBalance.value) * item / 100
     amountOut.value = calculatedAmount.toFixed(6)
-    
+
     // 触发计算
     independentField.value = 'OUTPUT'
     debouncedCalculateFromOutput(amountOut.value)
@@ -422,7 +476,7 @@ function handleSelect(token) {
         }
         toSymbol.value = selectedSymbol
     }
-    
+
     // 代币变更后重新计算
     nextTick(() => {
         if (amountIn.value && independentField.value === 'INPUT') {
@@ -441,9 +495,77 @@ async function connectWallet() {
         connected.value = true
         var result = await fetchAllBalancesV6(provider, userAddress.value, allAcconts.value)
         console.log(result)
+        
     }
 }
-
+async function handleRemoveLiquidity(amount) {
+    console.log('选中的池子信息:', selItem.value)
+    
+    if (!selItem.value || !selItem.value.token0Symbol || !selItem.value.token1Symbol) {
+        console.error('缺少池子信息')
+        return
+    }
+    
+    const poolInfo = selItem.value
+    
+    try {
+        // 从 mapAcconts 获取代币信息
+        const token0Info = mapAcconts[poolInfo.token0Symbol]
+        const token1Info = mapAcconts[poolInfo.token1Symbol]
+        
+        if (!token0Info || !token1Info) {
+            console.error('代币信息不完整:', {
+                token0Symbol: poolInfo.token0Symbol,
+                token1Symbol: poolInfo.token1Symbol,
+                token0Info,
+                token1Info
+            })
+            return
+        }
+        
+        // 构建删除流动性参数
+        const removeParams = {
+            tokenA: {
+                address: token0Info.address,
+                symbol: poolInfo.token0Symbol === 'WCP' ? 'CP' : poolInfo.token0Symbol,
+                decimals: token0Info.decimals
+            },
+            tokenB: {
+                address: token1Info.address,
+                symbol: poolInfo.token1Symbol,
+                decimals: token1Info.decimals
+            },
+            liquidityAmount: amount.toString(),
+            pairAddress: poolInfo.pairAddress || poolInfo.liquidityTokenAddress,
+            slippageInput: slippageInput.value || 0.5,
+            userAddress: address.value,
+            routerAddress: ROUTER_ADDRESS,
+            wcpAddress: WRAPPED_CP_ADDRESS,
+            nativeSymbol: 'CP'
+        }
+        
+        console.log('删除流动性参数:', removeParams)
+        
+        // 调用删除流动性函数
+        const result = await doRemoveLiquidity(removeParams)
+        
+        if (result.success) {
+            console.log('删除流动性成功:', result)
+            // 刷新用户余额
+         
+            // 关闭弹窗
+            showRemoveModal.value = false
+            // 清空选中项
+            selItem.value = {}
+            await fetchAllBalancesV6(provider, userAddress.value, allAcconts.value)
+        } else {
+            console.error('删除流动性失败:', result.error)
+        }
+        
+    } catch (error) {
+        console.error('删除流动性出错:', error)
+    }
+}
 // 获取余额
 async function fetchAllBalancesV6(provider, address, tokenList) {
     isfromprocess.value = true
@@ -467,6 +589,9 @@ async function fetchAllBalancesV6(provider, address, tokenList) {
     console.log(allAcconts.value)
     isfromprocess.value = false
     tofromprocess.value = false
+    const calculator = new CPChainAPRCalculator()
+            const userBalances = await calculator.getUserAllLPBalances(address)
+            userBalances1.value = userBalances
     return tokenList
 }
 
@@ -478,29 +603,29 @@ async function fetchAllBalancesV6(provider, address, tokenList) {
 // ... existing code ...
 async function sure() {
     if (!canAddLiquidity.value) return
-    
+
     try {
         // 获取代币信息
         const fromToken = allAcconts.value.find(acc => acc.symbol === fromSymbol.value)
         const toToken = allAcconts.value.find(acc => acc.symbol === toSymbol.value)
-        
+
         if (!fromToken || !toToken) {
             throw new Error('代币信息获取失败')
         }
-        
+
         // 构建代币对象
         const tokenA = {
             address: fromToken.isNative ? WRAPPED_CP_ADDRESS : fromToken.token.address,
             decimals: fromToken.decimals,
             symbol: fromToken.symbol
         }
-        
+
         const tokenB = {
             address: toToken.isNative ? WRAPPED_CP_ADDRESS : toToken.token.address,
             decimals: toToken.decimals,
             symbol: toToken.symbol
         }
-        
+
         // 修复：正确的进度回调函数
         const onProgress = (stage, message) => {
             console.log(`交易状态 [${stage}]:`, message)
@@ -529,7 +654,7 @@ async function sure() {
                     break
             }
         }
-        
+
         // 修复：添加缺少的参数
         const result = await doAddLiquidity({
             tokenA,
@@ -551,28 +676,28 @@ async function sure() {
             },
             onProgress
         })
-        
+
         console.log('添加流动性结果:', result)
-        
+
         // 成功后的处理
         if (result.success) {
             // 清空输入
             amountIn.value = ''
             amountOut.value = ''
-            
+
             // 刷新余额
             await fetchAllBalancesV6(provider, userAddress.value, allAcconts.value)
-            
+
             // 显示成功消息
             // alert(`流动性添加成功！\n交易哈希: ${result.transactionHash}`)
         } else {
             // 处理失败情况
             throw new Error(result.error || '添加流动性失败')
         }
-        
+
     } catch (error) {
         console.error('添加流动性失败:', error)
-        
+
         // 改进的错误处理
         let errorMessage = '添加流动性失败'
         if (error.message.includes('用户取消') || error.message.includes('User rejected')) {
@@ -590,7 +715,7 @@ async function sure() {
         } else if (error.message) {
             errorMessage = error.message
         }
-        
+
         // alert(errorMessage)
     }
 }
@@ -639,6 +764,65 @@ watch(
 
     .contents {
         padding-bottom: 80px;
+    }
+
+    .myPosition {
+        width: 100%;
+        display: flex;
+        // align-items: center;
+        justify-content: center;
+
+        .container {
+            flex: 1;
+            max-width: 1200px;
+
+            h3 {
+                color: #fff;
+                font-size: 24px;
+                font-style: normal;
+                font-weight: 500;
+                line-height: normal;
+            }
+
+            table {
+                width: 100%;
+
+                thead {
+                    tr {
+                        height: 64px;
+
+                        th {
+                            color: var(---, #8E8E92);
+                            font-size: 12px;
+                            font-style: normal;
+                            font-weight: 400;
+                            line-height: normal;
+                            height: 40px;
+                            text-align: left;
+                            flex: 1;
+                        }
+                    }
+                }
+
+                tbody {
+                    tr {
+                        height: 64px;
+
+                        td {
+                            flex: 1;
+                            color: #fff;
+                            font-size: 14px;
+                            font-style: normal;
+                            font-weight: 500;
+                            line-height: normal;
+                        }
+                    }
+                }
+            }
+
+
+        }
+
     }
 
     h1 {
@@ -926,7 +1110,7 @@ input[type="number"] {
 
         .swap-card {
             width: 90vw;
-            
+
             .opt {
                 .btn {
                     .item {
@@ -934,7 +1118,7 @@ input[type="number"] {
                             font-size: 12px;
                         }
                     }
-                    
+
                     .icons {
                         width: 20px;
                         height: 20px;
@@ -948,12 +1132,12 @@ input[type="number"] {
                     .swap-amount-input {
                         font-size: 24px;
                     }
-                    
+
                     .calculating-indicator {
                         font-size: 12px;
                     }
                 }
-                
+
                 .bottom {
                     .left {
                         .percentItem {
@@ -961,24 +1145,24 @@ input[type="number"] {
                             padding: 3px 6px;
                         }
                     }
-                    
+
                     .right {
                         font-size: 12px;
                     }
                 }
             }
-            
+
             .pool-status {
                 font-size: 12px;
                 padding: 10px 12px;
             }
-            
+
             .swap-setting-row {
                 .setting-label {
                     font-size: 13px;
                 }
             }
-            
+
             .swap-main-btn {
                 font-size: 14px;
             }
