@@ -1,9 +1,11 @@
+
+// export default doRemoveLiquidity
 import { parseUnits, formatUnits, encodeFunctionData } from 'viem'
 import { ElMessage } from 'element-plus'
 import { readContract, estimateFeesPerGas, estimateGas, writeContract, waitForTransactionReceipt } from '@wagmi/core'
 import { config } from '../../wagmi.ts'
 
-// Router ABI - 删除流动性相关函数
+// Router ABI - Remove liquidity related functions
 const routerAbi = [
   {
     name: 'removeLiquidity',
@@ -51,7 +53,7 @@ const routerAbi = [
   }
 ]
 
-// ERC20 ABI - 代币操作相关函数
+// ERC20 ABI - Token operation related functions
 const erc20Abi = [
   {
     name: 'allowance',
@@ -103,7 +105,7 @@ const erc20Abi = [
   }
 ]
 
-// Pair ABI - LP Token 相关函数
+// Pair ABI - LP Token related functions
 const pairAbi = [
   {
     name: 'getReserves',
@@ -167,23 +169,23 @@ const pairAbi = [
 ]
 
 /**
- * Gas 估算函数
- * @param {Array} abi - 合约 ABI
- * @param {string} functionName - 函数名
- * @param {Array} args - 函数参数
- * @param {string} to - 合约地址
- * @param {string} account - 用户地址
- * @param {bigint} value - 发送的 ETH 数量（可选）
- * @returns {Promise<Object>} Gas 估算结果
+ * Gas estimation function
+ * @param {Array} abi - Contract ABI
+ * @param {string} functionName - Function name
+ * @param {Array} args - Function parameters
+ * @param {string} to - Contract address
+ * @param {string} account - User address
+ * @param {bigint} value - Amount of ETH to send (optional)
+ * @returns {Promise<Object>} Gas estimation result
  */
 async function computedGas(abi, functionName, args, to, account, value = undefined) {
   try {
     console.log('🔍 Estimating gas for:', { functionName, to, account, value: value?.toString() })
 
-    // 1. 估算 Gas 费用
+    // 1. Estimate gas fees
     const feeData = await estimateFeesPerGas(config)
     
-    // 2. 估算 Gas 用量
+    // 2. Estimate gas usage
     const gasEstimate = await estimateGas(config, {
       to,
       account,
@@ -205,16 +207,16 @@ async function computedGas(abi, functionName, args, to, account, value = undefin
     return result
   } catch (error) {
     console.error('❌ Gas estimation failed:', error)
-    throw new Error('Gas 估算失败: ' + (error.message || error))
+    throw new Error('Gas estimation failed: ' + (error.message || error))
   }
 }
 
 /**
- * 检查 LP Token 余额
- * @param {string} pairAddress - LP Token 合约地址
- * @param {string} userAddress - 用户地址
- * @param {bigint} amount - 需要的数量
- * @returns {Promise<boolean>} 余额是否足够
+ * Check LP Token balance
+ * @param {string} pairAddress - LP Token contract address
+ * @param {string} userAddress - User address
+ * @param {bigint} amount - Required amount
+ * @returns {Promise<boolean>} Whether balance is sufficient
  */
 async function checkLPTokenBalance(pairAddress, userAddress, amount) {
   try {
@@ -241,9 +243,9 @@ async function checkLPTokenBalance(pairAddress, userAddress, amount) {
 }
 
 /**
- * 获取流动性池储备量
- * @param {string} pairAddress - LP Token 合约地址
- * @returns {Promise<Object>} 储备量信息
+ * Get liquidity pool reserves
+ * @param {string} pairAddress - LP Token contract address
+ * @returns {Promise<Object>} Reserve information
  */
 async function getPoolReserves(pairAddress) {
   try {
@@ -273,17 +275,17 @@ async function getPoolReserves(pairAddress) {
     }
   } catch (error) {
     console.error('❌ Get pool reserves failed:', error)
-    throw new Error('获取流动性池储备量失败')
+    throw new Error('Failed to get liquidity pool reserves')
   }
 }
 
 /**
- * 计算删除流动性后能获得的代币数量
- * @param {bigint} liquidity - LP Token 数量
- * @param {bigint} totalSupply - LP Token 总供给量
- * @param {bigint} reserve0 - 代币0储备量
- * @param {bigint} reserve1 - 代币1储备量
- * @returns {Object} 预期获得的代币数量
+ * Calculate token amounts to receive after removing liquidity
+ * @param {bigint} liquidity - LP Token amount
+ * @param {bigint} totalSupply - LP Token total supply
+ * @param {bigint} reserve0 - Token0 reserves
+ * @param {bigint} reserve1 - Token1 reserves
+ * @returns {Object} Expected token amounts
  */
 function calculateRemoveAmounts(liquidity, totalSupply, reserve0, reserve1) {
   try {
@@ -311,21 +313,21 @@ function calculateRemoveAmounts(liquidity, totalSupply, reserve0, reserve1) {
 }
 
 /**
- * 检查并授权 LP Token
- * @param {string} pairAddress - LP Token 合约地址
- * @param {string} userAddress - 用户地址
- * @param {string} routerAddress - 路由器地址
- * @param {bigint} amount - 需要授权的数量
- * @param {Function} setApprovalHash - 设置授权哈希的回调
- * @param {Function} onProgress - 进度回调
- * @returns {Promise<Object>} 授权结果
+ * Check and approve LP Token
+ * @param {string} pairAddress - LP Token contract address
+ * @param {string} userAddress - User address
+ * @param {string} routerAddress - Router address
+ * @param {bigint} amount - Amount to approve
+ * @param {Function} setApprovalHash - Callback to set approval hash
+ * @param {Function} onProgress - Progress callback
+ * @returns {Promise<Object>} Approval result
  */
 async function checkAndApproveLPToken(pairAddress, userAddress, routerAddress, amount, setApprovalHash, onProgress) {
   try {
     console.log('🔍 Checking LP Token allowance...')
-    onProgress && onProgress('approval_check', '检查 LP Token 授权状态...')
+    onProgress && onProgress('approval_check', 'Checking LP Token approval status...')
     
-    // 1. 检查当前授权额度
+    // 1. Check current allowance
     const allowanceResult = await readContract(config, {
       address: pairAddress,
       abi: pairAbi,
@@ -342,12 +344,12 @@ async function checkAndApproveLPToken(pairAddress, userAddress, routerAddress, a
       needsApproval: allowance < amountBN
     })
 
-    // 2. 如果授权不足，进行授权
+    // 2. If allowance is insufficient, approve
     if (allowance < amountBN) {
       console.log('📝 Submitting LP Token approval for:', amountBN.toString())
-      onProgress && onProgress('approval_pending', '正在授权 LP Token...')
+      onProgress && onProgress('approval_pending', 'Approving LP Token...')
 
-      // 3. 估算授权交易的 Gas
+      // 3. Estimate gas for approval transaction
       const approveGasEstimate = await computedGas(
         pairAbi,
         'approve',
@@ -356,7 +358,7 @@ async function checkAndApproveLPToken(pairAddress, userAddress, routerAddress, a
         userAddress
       )
 
-      // 4. 提交授权交易
+      // 4. Submit approval transaction
       const approveHash = await writeContract(config, {
         abi: pairAbi,
         address: pairAddress,
@@ -370,68 +372,68 @@ async function checkAndApproveLPToken(pairAddress, userAddress, routerAddress, a
       setApprovalHash && setApprovalHash(approveHash)
       console.log('✅ LP Token approval submitted:', approveHash)
 
-      // 显示授权提示
+      // Show approval notification
       ElMessage({
-        message: 'LP Token 授权已提交，等待确认...',
+        message: 'LP Token approval submitted, waiting for confirmation...',
         type: 'info',
         duration: 3000,
         showClose: true
       })
 
-      onProgress && onProgress('approval_confirming', '等待 LP Token 授权确认...')
+      onProgress && onProgress('approval_confirming', 'Waiting for LP Token approval confirmation...')
 
-      // 等待授权交易确认
+      // Wait for approval transaction confirmation
       console.log('⏳ Waiting for LP Token approval confirmation...')
       const approvalReceipt = await waitForTransactionReceipt(config, {
         hash: approveHash,
-        timeout: 60000 // 60秒超时
+        timeout: 60000 // 60 seconds timeout
       })
 
       if (approvalReceipt.status !== 'success') {
-        throw new Error('LP Token 授权交易失败')
+        throw new Error('LP Token approval transaction failed')
       }
 
       console.log('✅ LP Token approval confirmed:', approvalReceipt.transactionHash)
       ElMessage({
-        message: 'LP Token 授权确认成功',
+        message: 'LP Token approval confirmed successfully',
         type: 'success',
         duration: 2000
       })
 
-      onProgress && onProgress('approval_success', 'LP Token 授权成功')
+      onProgress && onProgress('approval_success', 'LP Token approval successful')
 
       return { approved: true, hash: approveHash }
     }
 
-    onProgress && onProgress('approval_sufficient', 'LP Token 授权充足，无需重新授权')
+    onProgress && onProgress('approval_sufficient', 'LP Token allowance sufficient, no re-approval needed')
     return { approved: false, hash: null }
   } catch (error) {
     console.error('❌ LP Token approval error:', error)
-    onProgress && onProgress('approval_error', `LP Token 授权失败: ${error.message}`)
+    onProgress && onProgress('approval_error', `LP Token approval failed: ${error.message}`)
     
     if (error.message && error.message.includes('User rejected')) {
-      throw new Error('用户取消了授权操作')
+      throw new Error('User cancelled the approval operation')
     }
-    throw new Error('LP Token 授权失败: ' + (error.message || error))
+    throw new Error('LP Token approval failed: ' + (error.message || error))
   }
 }
 
 /**
- * 删除流动性主函数
- * @param {Object} params - 参数对象
- * @param {Object} params.tokenA - 代币A对象 (包含 address, symbol, decimals)
- * @param {Object} params.tokenB - 代币B对象 (包含 address, symbol, decimals)
- * @param {string} params.pairAddress - LP Token 合约地址
- * @param {string} params.liquidityAmount - LP Token 数量（用户输入格式）
- * @param {number} params.slippageInput - 滑点容忍度（百分比，如 0.5 表示 0.5%）
- * @param {string} params.userAddress - 用户钱包地址
- * @param {string} params.routerAddress - 路由器合约地址
- * @param {string} params.wcpAddress - Wrapped CP 地址
- * @param {string} [params.nativeSymbol='CP'] - 原生币符号
- * @param {Function} [params.setTxHash] - 设置交易哈希的回调
- * @param {Function} [params.setApprovalHash] - 设置授权哈希的回调
- * @param {Function} [params.onProgress] - 进度回调函数
- * @returns {Promise<Object>} 交易结果
+ * Remove liquidity main function
+ * @param {Object} params - Parameter object
+ * @param {Object} params.tokenA - TokenA object (includes address, symbol, decimals)
+ * @param {Object} params.tokenB - TokenB object (includes address, symbol, decimals)
+ * @param {string} params.pairAddress - LP Token contract address
+ * @param {string} params.liquidityAmount - LP Token amount (user input format)
+ * @param {number} params.slippageInput - Slippage tolerance (percentage, e.g., 0.5 means 0.5%)
+ * @param {string} params.userAddress - User wallet address
+ * @param {string} params.routerAddress - Router contract address
+ * @param {string} params.wcpAddress - Wrapped CP address
+ * @param {string} [params.nativeSymbol='CP'] - Native coin symbol
+ * @param {Function} [params.setTxHash] - Callback to set transaction hash
+ * @param {Function} [params.setApprovalHash] - Callback to set approval hash
+ * @param {Function} [params.onProgress] - Progress callback function
+ * @returns {Promise<Object>} Transaction result
  */
 export async function doRemoveLiquidity({
   tokenA,
@@ -453,7 +455,7 @@ export async function doRemoveLiquidity({
   let approvalHash = null
   let expectedAmounts = { amount0: 0n, amount1: 0n }
 
-  // 进度更新函数
+  // Progress update function
   const updateProgress = (stage, message, data = {}) => {
     console.log(`📊 Progress [${stage}]:`, message, data)
     onProgress && onProgress(stage, message, data)
@@ -461,12 +463,12 @@ export async function doRemoveLiquidity({
 
   try {
     console.log('🚀 Starting remove liquidity process...')
-    updateProgress('start', '开始删除流动性...')
+    updateProgress('start', 'Starting remove liquidity...')
 
-    // 1. 参数验证
-    if (!userAddress || !routerAddress || !pairAddress) throw new Error('参数不完整')
-    if (!tokenA || !tokenB) throw new Error('代币信息不完整')
-    if (!liquidityAmount || liquidityAmount === '0') throw new Error('请输入有效的 LP Token 数量')
+    // 1. Parameter validation
+    if (!userAddress || !routerAddress || !pairAddress) throw new Error('Incomplete parameters')
+    if (!tokenA || !tokenB) throw new Error('Incomplete token information')
+    if (!liquidityAmount || liquidityAmount === '0') throw new Error('Please enter a valid LP Token amount')
 
     console.log('📋 Remove liquidity params:', {
       tokenA: { symbol: tokenA.symbol, address: tokenA.address },
@@ -478,10 +480,10 @@ export async function doRemoveLiquidity({
       routerAddress
     })
 
-    // 2. 滑点计算和验证
-    const slippageBN = BigInt(Math.floor(slippageInput * 100)) // 转换为基点
-    if (slippageBN < 1n || slippageBN > 5000n) { // 0.01% 到 50%
-      throw new Error('滑点设置无效，请设置在 0.01% 到 50% 之间')
+    // 2. Slippage calculation and validation
+    const slippageBN = BigInt(Math.floor(slippageInput * 100)) // Convert to basis points
+    if (slippageBN < 1n || slippageBN > 5000n) { // 0.01% to 50%
+      throw new Error('Invalid slippage setting, please set between 0.01% and 50%')
     }
 
     console.log('📊 Slippage settings:', {
@@ -489,15 +491,15 @@ export async function doRemoveLiquidity({
       basisPoints: slippageBN.toString()
     })
 
-    // 3. 解析 LP Token 数量（LP Token 通常是 18 位精度）
+    // 3. Parse LP Token amount (LP Token usually has 18 decimals)
     const liquidityParsed = parseUnits(liquidityAmount.toString(), 18)
 
     console.log('💰 Parsed liquidity amount:', {
       liquidity: liquidityParsed.toString()
     })
 
-    // 4. 检查 LP Token 余额
-    updateProgress('validation', '验证 LP Token 余额...')
+    // 4. Check LP Token balance
+    updateProgress('validation', 'Validating LP Token balance...')
     
     const balanceCheck = await checkLPTokenBalance(
       pairAddress,
@@ -506,11 +508,11 @@ export async function doRemoveLiquidity({
     )
 
     if (!balanceCheck) {
-      throw new Error('LP Token 余额不足')
+      throw new Error('Insufficient LP Token balance')
     }
 
-    // 5. 获取流动性池信息
-    updateProgress('pool_info', '获取流动性池信息...')
+    // 5. Get liquidity pool information
+    updateProgress('pool_info', 'Getting liquidity pool information...')
     
     const [poolReserves, totalSupply] = await Promise.all([
       getPoolReserves(pairAddress),
@@ -531,7 +533,7 @@ export async function doRemoveLiquidity({
       totalSupply: totalSupply.toString()
     })
 
-    // 6. 计算预期获得的代币数量
+    // 6. Calculate expected token amounts
     expectedAmounts = calculateRemoveAmounts(
       liquidityParsed,
       totalSupply,
@@ -539,10 +541,10 @@ export async function doRemoveLiquidity({
       poolReserves.reserve1
     )
 
-    // 7. 确定代币顺序（token0 对应 tokenA 还是 tokenB）
+    // 7. Determine token order (whether token0 corresponds to tokenA or tokenB)
     const getTokenAddress = (token) => {
       if (token.symbol === nativeSymbol) {
-        return wcpAddress // 原生币使用 WETH 地址
+        return wcpAddress // Native coin uses WETH address
       }
       return token.address
     }
@@ -550,7 +552,7 @@ export async function doRemoveLiquidity({
     const tokenAAddress = getTokenAddress(tokenA)
     const tokenBAddress = getTokenAddress(tokenB)
     
-    // 确定代币在池子中的顺序
+    // Determine token order in the pool
     const isTokenAFirst = tokenAAddress.toLowerCase() === poolReserves.token0.toLowerCase()
     const amountAExpected = isTokenAFirst ? expectedAmounts.amount0 : expectedAmounts.amount1
     const amountBExpected = isTokenAFirst ? expectedAmounts.amount1 : expectedAmounts.amount0
@@ -564,7 +566,7 @@ export async function doRemoveLiquidity({
       }
     })
 
-    // 8. 计算最小接受数量（考虑滑点）
+    // 8. Calculate minimum acceptable amounts (considering slippage)
     const amountAMinBN = (amountAExpected * (10000n - slippageBN)) / 10000n
     const amountBMinBN = (amountBExpected * (10000n - slippageBN)) / 10000n
 
@@ -573,10 +575,10 @@ export async function doRemoveLiquidity({
       amountBMin: amountBMinBN.toString()
     })
 
-    // 9. 设置交易截止时间（15分钟后）
+    // 9. Set transaction deadline (15 minutes later)
     const deadline = BigInt(Math.floor(Date.now() / 1000) + 900)
 
-    // 10. 判断流动性类型
+    // 10. Determine liquidity type
     const isNativeA = tokenA.symbol === nativeSymbol
     const isNativeB = tokenB.symbol === nativeSymbol
     const hasNative = isNativeA || isNativeB
@@ -588,8 +590,8 @@ export async function doRemoveLiquidity({
       type: hasNative ? 'Native + ERC20' : 'ERC20 + ERC20'
     })
 
-    // 11. 检查并授权 LP Token
-    updateProgress('approval', '检查 LP Token 授权...')
+    // 11. Check and approve LP Token
+    updateProgress('approval', 'Checking LP Token approval...')
 
     const approvalResult = await checkAndApproveLPToken(
       pairAddress,
@@ -605,12 +607,12 @@ export async function doRemoveLiquidity({
       approvalHash = approvalResult.hash
     }
 
-    updateProgress('transaction', '提交删除流动性交易...')
+    updateProgress('transaction', 'Submitting remove liquidity transaction...')
 
     let hash
 
     if (hasNative) {
-      // Native + ERC20 流动性删除
+      // Native + ERC20 liquidity removal
       console.log('🔄 Processing Native + ERC20 liquidity removal')
       const erc20Token = isNativeA ? tokenB : tokenA
       const tokenAmountMin = isNativeA ? amountBMinBN : amountAMinBN
@@ -623,7 +625,7 @@ export async function doRemoveLiquidity({
         nativeAmountMin: nativeAmountMin.toString()
       })
 
-      // 执行删除流动性
+      // Execute remove liquidity
       console.log('🔄 Submitting remove liquidity ETH transaction...')
       const removeLiquidityGasEstimate = await computedGas(
         routerAbi,
@@ -655,7 +657,7 @@ export async function doRemoveLiquidity({
       console.log('✅ Native + Token liquidity removal submitted:', hash)
     }
     else {
-      // ERC20 + ERC20 流动性删除
+      // ERC20 + ERC20 liquidity removal
       console.log('🔄 Processing ERC20 + ERC20 liquidity removal')
 
       console.log('📋 ERC20 + ERC20 remove params:', {
@@ -666,7 +668,7 @@ export async function doRemoveLiquidity({
         amountBMin: amountBMinBN.toString()
       })
 
-      // 执行删除流动性
+      // Execute remove liquidity
       console.log('🔄 Submitting remove liquidity transaction...')
       const removeLiquidityGasEstimate = await computedGas(
         routerAbi,
@@ -699,17 +701,17 @@ export async function doRemoveLiquidity({
       console.log('✅ ERC20 + ERC20 liquidity removal submitted:', hash)
     }
 
-    // 等待交易确认
-    updateProgress('pending', '等待交易确认...', { txHash })
+    // Wait for transaction confirmation
+    updateProgress('pending', 'Waiting for transaction confirmation...', { txHash })
     console.log('⏳ Waiting for transaction confirmation:', txHash)
 
     const receipt = await waitForTransactionReceipt(config, {
       hash: txHash,
-      timeout: 120000 // 2分钟超时
+      timeout: 120000 // 2 minutes timeout
     })
 
     if (receipt.status === 'success') {
-      updateProgress('success', '交易确认成功', { 
+      updateProgress('success', 'Transaction confirmed successfully', { 
         txHash,
         expectedAmounts: {
           amountA: formatUnits(amountAExpected, tokenA.decimals),
@@ -719,9 +721,9 @@ export async function doRemoveLiquidity({
       })
       console.log('✅ Transaction confirmed successfully:', receipt.transactionHash)
       
-      // 显示成功提示
+      // Show success notification
       ElMessage({
-        message: '删除流动性成功！',
+        message: 'Remove liquidity successful!',
         type: 'success',
         duration: 5000,
         showClose: true
@@ -740,36 +742,36 @@ export async function doRemoveLiquidity({
         error: null
       }
     } else {
-      throw new Error('交易执行失败')
+      throw new Error('Transaction execution failed')
     }
 
   } catch (e) {
     console.error('❌ Remove liquidity failed:', e)
     error = e
 
-    updateProgress('error', '交易失败', { error: e.message })
+    updateProgress('error', 'Transaction failed', { error: e.message })
 
-    // 提供更友好的错误信息
+    // Provide more user-friendly error messages
     let errorMessage = e.message
     if (e.message && e.message.includes('User rejected')) {
-      errorMessage = '用户取消了交易'
+      errorMessage = 'User cancelled the transaction'
     } else if (e.message && e.message.includes('insufficient funds')) {
-      errorMessage = '余额不足'
+      errorMessage = 'Insufficient balance'
     } else if (e.message && e.message.includes('INSUFFICIENT_LIQUIDITY_BURNED')) {
-      errorMessage = 'LP Token 数量不足'
+      errorMessage = 'Insufficient LP Token amount'
     } else if (e.message && e.message.includes('INSUFFICIENT_A_AMOUNT')) {
-      errorMessage = '代币A数量不足，请调整滑点'
+      errorMessage = 'Insufficient tokenA amount, please adjust slippage'
     } else if (e.message && e.message.includes('INSUFFICIENT_B_AMOUNT')) {
-      errorMessage = '代币B数量不足，请调整滑点'
+      errorMessage = 'Insufficient tokenB amount, please adjust slippage'
     } else if (e.message && e.message.includes('EXPIRED')) {
-      errorMessage = '交易已过期，请重试'
+      errorMessage = 'Transaction expired, please retry'
     } else if (e.message && e.message.includes('timeout')) {
-      errorMessage = '交易确认超时，请检查区块链浏览器'
+      errorMessage = 'Transaction confirmation timeout, please check blockchain explorer'
     } else if (e.message && e.message.includes('Gas estimation failed')) {
-      errorMessage = 'Gas 估算失败，请检查网络连接或合约地址'
+      errorMessage = 'Gas estimation failed, please check network connection or contract address'
     }
 
-    // 显示错误提示
+    // Show error notification
     ElMessage({
       message: errorMessage,
       type: 'error',

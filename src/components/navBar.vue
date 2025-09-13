@@ -6,13 +6,18 @@
           <div class="gridContent">
             <a href="/" class="flex"><img src="../assets/images/cpChain.png" alt="" /></a>
           </div>
+          <!-- <el-menu :default-active="activeIndex" class="el-menu-demo" mode="horizontal" @select="handleSelect">
+            <el-menu-item index="1">Processing Center</el-menu-item>
+            <el-menu-item index="2">Processing Center</el-menu-item>
+          </el-menu> -->
+       
         </el-col>
         <el-col :xs="21" :sm="20" :md="19" :lg="15" :xl="13">
           <div class="gridContent2">
             <div class="menu">
               <el-menu :default-active="activeIndex" class="el-menu-demo" mode="horizontal" @select="handleSelect"
                 style="background: transparent" :ellipsis="false">
-
+              
                 <el-sub-menu index="6">
                   <template #title>
                     <img src="@/assets/language.png" alt="" style="height: 20px" />

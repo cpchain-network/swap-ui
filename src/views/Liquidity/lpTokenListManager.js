@@ -1,3 +1,7 @@
+
+
+
+
 import { ethers } from 'ethers';
 import { Token } from '@uniswap/sdk-core';
 import { Pair, Route, Trade } from '@uniswap/v2-sdk';
@@ -29,12 +33,7 @@ const allLptoken = [
     token0Deposited: "",
     token1Deposited: "",
     userPoolTokens: "",
-    poolTokenPercentage: "",
-    // USDT价值字段
-    userPoolBalanceUSDT: "",
-    token0DepositedUSDT: "",
-    token1DepositedUSDT: "",
-    userPoolTokensUSDT: ""
+    poolTokenPercentage: ""
   },
   {
     name: 'cp/usdc',
@@ -53,12 +52,7 @@ const allLptoken = [
     token0Deposited: "",
     token1Deposited: "",
     userPoolTokens: "",
-    poolTokenPercentage: "",
-    // USDT价值字段
-    userPoolBalanceUSDT: "",
-    token0DepositedUSDT: "",
-    token1DepositedUSDT: "",
-    userPoolTokensUSDT: ""
+    poolTokenPercentage: ""
   },
   {
     name: 'usdt/usdc',
@@ -77,12 +71,7 @@ const allLptoken = [
     token0Deposited: "",
     token1Deposited: "",
     userPoolTokens: "",
-    poolTokenPercentage: "",
-    // USDT价值字段
-    userPoolBalanceUSDT: "",
-    token0DepositedUSDT: "",
-    token1DepositedUSDT: "",
-    userPoolTokensUSDT: ""
+    poolTokenPercentage: ""
   }
 ];
 
@@ -400,8 +389,6 @@ class CPChainAPRCalculator {
     }
   }
 
-// ... existing code ...
-
   /**
    * 获取代币信息
    */
@@ -710,7 +697,7 @@ class CPChainAPRCalculator {
   }
 
   /**
-   * 获取用户 LP 余额（修改版本 - 添加USDT价值）
+   * 获取用户 LP 余额
    */
   async getUserLPBalance(userAddress, lpToken) {
     try {
@@ -718,70 +705,29 @@ class CPChainAPRCalculator {
 
       if (!this.validateUserAddress(userAddress)) {
         this.log('error', '无效的用户地址');
-        return { balance: '0', balanceUSDT: '0' };
+        return '0';
       }
 
       if (!this.validateAddress(lpToken.pairAddress)) {
         this.log('error', '无效的配对地址');
-        return { balance: '0', balanceUSDT: '0' };
+        return '0';
       }
 
       return this.retryRequest(async () => {
         const pairContract = new ethers.Contract(lpToken.pairAddress, PAIR_ABI, this.provider);
-        const [balance, totalSupply, reserves] = await Promise.all([
-          pairContract.balanceOf(userAddress),
-          pairContract.totalSupply(),
-          pairContract.getReserves()
-        ]);
-        
-        const balanceFormatted = ethers.formatEther(balance);
-        
-        // 计算LP token的USDT价值
-        const totalSupplyFormatted = Number(ethers.formatEther(totalSupply));
-        const userBalanceNum = Number(balanceFormatted);
-        
-        if (totalSupplyFormatted === 0 || userBalanceNum === 0) {
-          return { balance: balanceFormatted, balanceUSDT: '0' };
-        }
-        
-        // 获取储备量
-        const token0Address = await pairContract.token0();
-        const isToken0First = token0Address.toLowerCase() === lpToken.token0.address.toLowerCase();
-        
-        const reserve0Raw = isToken0First ? reserves.reserve0 : reserves.reserve1;
-        const reserve1Raw = isToken0First ? reserves.reserve1 : reserves.reserve0;
-        
-        const reserve0 = Number(ethers.formatEther(reserve0Raw));
-        const reserve1 = Number(ethers.formatEther(reserve1Raw));
-        
-        // 获取代币价格
-        const [token0Price, token1Price] = await Promise.all([
-          this.getTokenPriceRealtime(lpToken.token0.address, lpToken.token0.symbol),
-          this.getTokenPriceRealtime(lpToken.token1.address, lpToken.token1.symbol)
-        ]);
-        
-        // 计算总TVL
-        const totalTVL = (reserve0 * token0Price) + (reserve1 * token1Price);
-        
-        // 计算用户LP token的USDT价值
-        const userPercentage = userBalanceNum / totalSupplyFormatted;
-        const userTVL = totalTVL * userPercentage;
-        
-        this.log('info', `用户LP余额: ${balanceFormatted}, USDT价值: $${userTVL.toFixed(6)}`);
-        
-        return { 
-          balance: balanceFormatted, 
-          balanceUSDT: userTVL.toFixed(6) 
-        };
+        const balance = await pairContract.balanceOf(userAddress);
+        const formattedBalance = ethers.formatEther(balance);
+        this.log('info', `用户LP余额: ${formattedBalance}`);
+        return formattedBalance;
       });
     } catch (error) {
       this.log('error', '获取用户LP余额失败', { error: error.message });
-      return { balance: '0', balanceUSDT: '0' };
+      return '0';
     }
   }
 
   /**
-   * 获取用户在特定池子中的详细信息（修改版本 - 添加USDT价值）
+   * 获取用户在特定池子中的详细信息
    */
   async getUserPoolDetails(userAddress, lpToken) {
     try {
@@ -816,23 +762,12 @@ class CPChainAPRCalculator {
         const reserve0Raw = isToken0First ? reserves.reserve0 : reserves.reserve1;
         const reserve1Raw = isToken0First ? reserves.reserve1 : reserves.reserve0;
 
-        const reserve0 = Number(ethers.formatEther(reserve0Raw));
-        const reserve1 = Number(ethers.formatEther(reserve1Raw));
+        const reserve0 = Number(ethers.formatUnits(reserve0Raw, lpToken.token0.decimals));
+        const reserve1 = Number(ethers.formatUnits(reserve1Raw, lpToken.token1.decimals));
 
-        // 计算用户在池子中的代币数量
-        const userToken0Amount = (reserve0 * userPercentage) / 100;
-        const userToken1Amount = (reserve1 * userPercentage) / 100;
-        
-        // 获取代币价格用于USDT价值计算
-        const [token0Price, token1Price] = await Promise.all([
-          this.getTokenPriceRealtime(lpToken.token0.address, lpToken.token0.symbol),
-          this.getTokenPriceRealtime(lpToken.token1.address, lpToken.token1.symbol)
-        ]);
-        
-        // 计算USDT价值
-        const userToken0ValueUSDT = userToken0Amount * token0Price;
-        const userToken1ValueUSDT = userToken1Amount * token1Price;
-        const userPoolBalanceUSDT = userToken0ValueUSDT + userToken1ValueUSDT;
+        // 修复：计算用户在池子中的代币数量
+        const userToken0Amount = reserve0 * (userPercentage / 100);
+        const userToken1Amount = reserve1 * (userPercentage / 100);
 
         return {
           pairName: lpToken.name,
@@ -842,13 +777,7 @@ class CPChainAPRCalculator {
           userPoolBalance: userBalanceFormatted.toFixed(6),
           token0Deposited: userToken0Amount.toFixed(6),
           token1Deposited: userToken1Amount.toFixed(6),
-          userPoolTokens: userBalanceFormatted.toFixed(6),
-          poolTokenPercentage: userPercentage.toFixed(4),
-          // 新增USDT价值字段
-          userPoolBalanceUSDT: userPoolBalanceUSDT.toFixed(6),
-          token0DepositedUSDT: userToken0ValueUSDT.toFixed(6),
-          token1DepositedUSDT: userToken1ValueUSDT.toFixed(6),
-          userPoolTokensUSDT: userPoolBalanceUSDT.toFixed(6)
+          poolTokenPercentage: userPercentage.toFixed(4)
         };
       });
     } catch (error) {
@@ -858,7 +787,7 @@ class CPChainAPRCalculator {
   }
 
   /**
-   * 获取用户所有 LP 余额 - 并发优化版本（修改版本 - 添加USDT价值）
+   * 获取用户所有 LP 余额 - 并发优化版本
    */
   async getUserAllLPBalances(userAddress) {
     try {
@@ -885,28 +814,21 @@ class CPChainAPRCalculator {
       for (let index = 0; index < allLptoken.length; index++) {
         const lpToken = allLptoken[index];
         const userDetail = userDetails[index];
-        const balanceInfo = balances[index];
 
         const result = {
           // 原有字段
           ...aprs[index],
-          lptokenNum: balanceInfo.balance,
+          lptokenNum: balances[index],
 
-          // 新增字段 - 使用实际计算的值
+          // 新增字段 - 使用实际计算的值，移除重复的userPoolTokens字段
           pairName: userDetail ? userDetail.pairName : (lpToken.name || ""),
           token0Symbol: userDetail ? userDetail.token0Symbol : (lpToken.token0.symbol || ""),
           token1Symbol: userDetail ? userDetail.token1Symbol : (lpToken.token1.symbol || ""),
           liquidityTokenAddress: userDetail ? userDetail.liquidityTokenAddress : (lpToken.pairAddress || ""),
-          userPoolBalance: userDetail ? userDetail.userPoolBalance : (balanceInfo.balance || "0"),
+          userPoolBalance: userDetail ? userDetail.userPoolBalance : (balances[index] || "0"),
           token0Deposited: userDetail ? userDetail.token0Deposited : "0",
           token1Deposited: userDetail ? userDetail.token1Deposited : "0",
-          userPoolTokens: userDetail ? userDetail.userPoolTokens : (balanceInfo.balance || "0"),
-          poolTokenPercentage: userDetail ? userDetail.poolTokenPercentage : "0",
-          // USDT价值字段
-          userPoolBalanceUSDT: userDetail ? userDetail.userPoolBalanceUSDT : (balanceInfo.balanceUSDT || "0"),
-          token0DepositedUSDT: userDetail ? userDetail.token0DepositedUSDT : "0",
-          token1DepositedUSDT: userDetail ? userDetail.token1DepositedUSDT : "0",
-          userPoolTokensUSDT: userDetail ? userDetail.userPoolTokensUSDT : (balanceInfo.balanceUSDT || "0")
+          poolTokenPercentage: userDetail ? userDetail.poolTokenPercentage : "0"
         };
 
         results.push(result);
@@ -921,11 +843,8 @@ class CPChainAPRCalculator {
         APR: r.apr + '%',
         TVL: '$' + r.lptokenPrice,
         用户余额: r.userPoolBalance,
-        'LP余额USDT': '$' + r.userPoolBalanceUSDT,
         Token0存入: r.token0Deposited,
-        'Token0存入USDT': '$' + r.token0DepositedUSDT,
         Token1存入: r.token1Deposited,
-        'Token1存入USDT': '$' + r.token1DepositedUSDT,
         池子百分比: r.poolTokenPercentage + '%'
       })));
 
@@ -936,8 +855,6 @@ class CPChainAPRCalculator {
       return [];
     }
   }
-
-// ... existing code ...
 
   /**
    * 获取用户所有池子的详细信息
@@ -984,30 +901,22 @@ class CPChainAPRCalculator {
 
       // 如果提供了用户地址，并发获取用户详情
       let userDetails = [];
-      let balances = [];
       if (userAddress) {
         const userTasks = allLptoken.map(lpToken => () => 
           this.getUserPoolDetails(userAddress, lpToken)
         );
-        const balanceTasks = allLptoken.map(lpToken => () => 
-          this.getUserLPBalance(userAddress, lpToken)
-        );
-        [userDetails, balances] = await Promise.all([
-          this.processConcurrently(userTasks),
-          this.processConcurrently(balanceTasks)
-        ]);
+        userDetails = await this.processConcurrently(userTasks);
       }
 
       const updatedTokens = allLptoken.map((lpToken, index) => {
         const aprData = aprResults[index];
         const userDetail = userDetails[index];
-        const balanceInfo = balances[index];
 
         return {
           ...lpToken,
           apr: aprData.apr,
           lptokenPrice: aprData.lptokenPrice,
-          lptokenNum: balanceInfo ? balanceInfo.balance : "0",
+          lptokenNum: userDetail ? userDetail.userPoolBalance : "0",
           pairName: lpToken.name,
           token0Symbol: lpToken.token0.symbol,
           token1Symbol: lpToken.token1.symbol,
@@ -1015,13 +924,7 @@ class CPChainAPRCalculator {
           userPoolBalance: userDetail ? userDetail.userPoolBalance : "0",
           token0Deposited: userDetail ? userDetail.token0Deposited : "0",
           token1Deposited: userDetail ? userDetail.token1Deposited : "0",
-          userPoolTokens: userDetail ? userDetail.userPoolTokens : "0",
-          poolTokenPercentage: userDetail ? userDetail.poolTokenPercentage : "0",
-          // USDT价值字段
-          userPoolBalanceUSDT: userDetail ? userDetail.userPoolBalanceUSDT : (balanceInfo ? balanceInfo.balanceUSDT : "0"),
-          token0DepositedUSDT: userDetail ? userDetail.token0DepositedUSDT : "0",
-          token1DepositedUSDT: userDetail ? userDetail.token1DepositedUSDT : "0",
-          userPoolTokensUSDT: userDetail ? userDetail.userPoolTokensUSDT : (balanceInfo ? balanceInfo.balanceUSDT : "0")
+          poolTokenPercentage: userDetail ? userDetail.poolTokenPercentage : "0"
         };
       });
 

@@ -1,9 +1,10 @@
+
 import { parseUnits, encodeFunctionData } from 'viem'
 import { ElMessage } from 'element-plus'
 import { readContract, estimateFeesPerGas, estimateGas, writeContract, waitForTransactionReceipt } from '@wagmi/core'
 import { config } from '../../wagmi.ts'
 
-// Router ABI - 添加流动性相关函数
+// Router ABI - Add liquidity related functions
 const routerAbi = [
   {
     name: 'addLiquidity',
@@ -100,7 +101,7 @@ const routerAbi = [
   }
 ]
 
-// ERC20 ABI - 代币操作相关函数
+// ERC20 ABI - Token operation related functions
 const erc20Abi = [
   {
     name: 'allowance',
@@ -153,23 +154,23 @@ const erc20Abi = [
 ]
 
 /**
- * Gas 估算函数
- * @param {Array} abi - 合约 ABI
- * @param {string} functionName - 函数名
- * @param {Array} args - 函数参数
- * @param {string} to - 合约地址
- * @param {string} account - 用户地址
- * @param {bigint} value - 发送的 ETH 数量（可选）
- * @returns {Promise<Object>} Gas 估算结果
+ * Gas estimation function
+ * @param {Array} abi - Contract ABI
+ * @param {string} functionName - Function name
+ * @param {Array} args - Function parameters
+ * @param {string} to - Contract address
+ * @param {string} account - User address
+ * @param {bigint} value - Amount of ETH to send (optional)
+ * @returns {Promise<Object>} Gas estimation result
  */
 async function computedGas(abi, functionName, args, to, account, value = undefined) {
   try {
     console.log('🔍 Estimating gas for:', { functionName, to, account, value: value?.toString() })
 
-    // 1. 估算 Gas 费用
+    // 1. Estimate gas fees
     const feeData = await estimateFeesPerGas(config)
     
-    // 2. 估算 Gas 用量
+    // 2. Estimate gas usage
     const gasEstimate = await estimateGas(config, {
       to,
       account,
@@ -191,29 +192,29 @@ async function computedGas(abi, functionName, args, to, account, value = undefin
     return result
   } catch (error) {
     console.error('❌ Gas estimation failed:', error)
-    throw new Error('Gas 估算失败: ' + (error.message || error))
+    throw new Error('Gas estimation failed: ' + (error.message || error))
   }
 }
 
 /**
- * 检查代币余额
- * @param {string} tokenAddress - 代币合约地址
- * @param {string} userAddress - 用户地址
- * @param {bigint} amount - 需要的数量
- * @param {boolean} isNative - 是否为原生币
- * @returns {Promise<boolean>} 余额是否足够
+ * Check token balance
+ * @param {string} tokenAddress - Token contract address
+ * @param {string} userAddress - User address
+ * @param {bigint} amount - Required amount
+ * @param {boolean} isNative - Whether it's native coin
+ * @returns {Promise<boolean>} Whether balance is sufficient
  */
 async function checkTokenBalance(tokenAddress, userAddress, amount, isNative = false) {
   try {
     let balance
     
     if (isNative) {
-      // 检查原生币余额（通过 wagmi 的 getBalance）
+      // Check native coin balance (via wagmi's getBalance)
       const { getBalance } = await import('@wagmi/core')
       const balanceResult = await getBalance(config, { address: userAddress })
       balance = balanceResult.value
     } else {
-      // 检查 ERC20 代币余额
+      // Check ERC20 token balance
       balance = await readContract(config, {
         address: tokenAddress,
         abi: erc20Abi,
@@ -238,11 +239,11 @@ async function checkTokenBalance(tokenAddress, userAddress, amount, isNative = f
 }
 
 /**
- * 检查流动性池是否存在
- * @param {string} factoryAddress - Factory 合约地址
- * @param {string} tokenA - 代币A地址
- * @param {string} tokenB - 代币B地址
- * @returns {Promise<Object>} 流动性池信息
+ * Check if liquidity pool exists
+ * @param {string} factoryAddress - Factory contract address
+ * @param {string} tokenA - Token A address
+ * @param {string} tokenB - Token B address
+ * @returns {Promise<Object>} Liquidity pool information
  */
 async function checkLiquidityPool(factoryAddress, tokenA, tokenB) {
   try {
@@ -285,22 +286,22 @@ async function checkLiquidityPool(factoryAddress, tokenA, tokenB) {
 }
 
 /**
- * 检查并授权代币（精确授权）
- * @param {string} tokenAddress - 代币合约地址
- * @param {string} tokenSymbol - 代币符号
- * @param {string} userAddress - 用户地址
- * @param {string} routerAddress - 路由器地址
- * @param {bigint} amount - 需要授权的精确数量
- * @param {Function} setApprovalHash - 设置授权哈希的回调
- * @param {Function} onProgress - 进度回调
- * @returns {Promise<Object>} 授权结果
+ * Check and approve token (exact approval)
+ * @param {string} tokenAddress - Token contract address
+ * @param {string} tokenSymbol - Token symbol
+ * @param {string} userAddress - User address
+ * @param {string} routerAddress - Router address
+ * @param {bigint} amount - Exact amount to approve
+ * @param {Function} setApprovalHash - Callback to set approval hash
+ * @param {Function} onProgress - Progress callback
+ * @returns {Promise<Object>} Approval result
  */
 async function checkAndApproveToken(tokenAddress, tokenSymbol, userAddress, routerAddress, amount, setApprovalHash, onProgress) {
   try {
     console.log(`🔍 Checking ${tokenSymbol} allowance...`)
-    onProgress && onProgress('approval_check', `检查 ${tokenSymbol} 授权状态...`)
+    onProgress && onProgress('approval_check', `Checking ${tokenSymbol} authorization status...`)
     
-    // 1. 检查当前授权额度
+    // 1. Check current allowance
     const allowanceResult = await readContract(config, {
       address: tokenAddress,
       abi: erc20Abi,
@@ -317,26 +318,26 @@ async function checkAndApproveToken(tokenAddress, tokenSymbol, userAddress, rout
       needsApproval: allowance < amountBN
     })
 
-    // 2. 如果授权不足，进行精确授权
+    // 2. If allowance is insufficient, perform exact approval
     if (allowance < amountBN) {
       console.log(`📝 Submitting ${tokenSymbol} exact approval for:`, amountBN.toString())
-      onProgress && onProgress('approval_pending', `正在授权 ${tokenSymbol}...`)
+      onProgress && onProgress('approval_pending', `Authorizing ${tokenSymbol}...`)
 
-      // 3. 估算授权交易的 Gas
+      // 3. Estimate gas for approval transaction
       const approveGasEstimate = await computedGas(
         erc20Abi,
         'approve',
-        [routerAddress, amountBN], // 使用精确金额
+        [routerAddress, amountBN], // Use exact amount
         tokenAddress,
         userAddress
       )
 
-      // 4. 提交精确授权交易
+      // 4. Submit exact approval transaction
       const approveHash = await writeContract(config, {
         abi: erc20Abi,
         address: tokenAddress,
         functionName: 'approve',
-        args: [routerAddress, amountBN], // 精确授权金额
+        args: [routerAddress, amountBN], // Exact approval amount
         gas: approveGasEstimate.gas,
         maxFeePerGas: approveGasEstimate.maxFeePerGas,
         maxPriorityFeePerGas: approveGasEstimate.maxPriorityFeePerGas
@@ -345,64 +346,64 @@ async function checkAndApproveToken(tokenAddress, tokenSymbol, userAddress, rout
       setApprovalHash && setApprovalHash(approveHash)
       console.log(`✅ ${tokenSymbol} exact approval submitted:`, approveHash)
 
-      // 显示授权提示
+      // Show approval notification
       ElMessage({
-        message: `${tokenSymbol} 授权已提交，等待确认...`,
+        message: `${tokenSymbol} Authorization submitted, awaiting confirmation...`,
         type: 'info',
         duration: 3000,
         showClose: true
       })
 
-      onProgress && onProgress('approval_confirming', `等待 ${tokenSymbol} 授权确认...`)
+      onProgress && onProgress('approval_confirming', `Waiting for ${tokenSymbol} authorization confirmation...`)
 
-      // 🔥 等待授权交易确认
+      // 🔥 Wait for approval transaction confirmation
       console.log(`⏳ Waiting for ${tokenSymbol} approval confirmation...`)
       const approvalReceipt = await waitForTransactionReceipt(config, {
         hash: approveHash,
-        timeout: 60000 // 60秒超时
+        timeout: 60000 // 60 seconds timeout
       })
 
       if (approvalReceipt.status !== 'success') {
-        throw new Error(`${tokenSymbol} 授权交易失败`)
+        throw new Error(`${tokenSymbol} authorization transaction failed`)
       }
 
       console.log(`✅ ${tokenSymbol} approval confirmed:`, approvalReceipt.transactionHash)
       ElMessage({
-        message: `${tokenSymbol} 授权确认成功`,
+        message: `${tokenSymbol} Authorization confirmation successful`,
         type: 'success',
         duration: 2000
       })
 
-      onProgress && onProgress('approval_success', `${tokenSymbol} 授权成功`)
+      onProgress && onProgress('approval_success', `${tokenSymbol} Authorization confirmation successful`)
 
       return { approved: true, hash: approveHash }
     }
 
-    onProgress && onProgress('approval_sufficient', `${tokenSymbol} 授权充足，无需重新授权`)
+    onProgress && onProgress('approval_sufficient', `${tokenSymbol} Sufficient authorization, no need for re-authorization`)
     return { approved: false, hash: null }
   } catch (error) {
     console.error(`❌ ${tokenSymbol} approval error:`, error)
-    onProgress && onProgress('approval_error', `${tokenSymbol} 授权失败: ${error.message}`)
+    onProgress && onProgress('approval_error', `${tokenSymbol} Authorization failed: ${error.message}`)
     
     if (error.message && error.message.includes('User rejected')) {
-      throw new Error('用户取消了授权操作')
+      throw new Error('The user canceled the authorization operation')
     }
-    throw new Error(`${tokenSymbol} 授权失败: ` + (error.message || error))
+    throw new Error(`${tokenSymbol} Authorization failed: ` + (error.message || error))
   }
 }
 
 /**
- * 计算价格影响
- * @param {bigint} amountA - 代币A数量
- * @param {bigint} amountB - 代币B数量
- * @param {bigint} reserveA - 代币A储备量
- * @param {bigint} reserveB - 代币B储备量
- * @returns {number} 价格影响百分比
+ * Calculate price impact
+ * @param {bigint} amountA - Token A amount
+ * @param {bigint} amountB - Token B amount
+ * @param {bigint} reserveA - Token A reserve
+ * @param {bigint} reserveB - Token B reserve
+ * @returns {number} Price impact percentage
  */
 function calculatePriceImpact(amountA, amountB, reserveA, reserveB) {
   try {
     if (reserveA === 0n || reserveB === 0n) {
-      return 0 // 新池子没有价格影响
+      return 0 // New pool has no price impact
     }
 
     const currentPrice = (reserveB * 1000000n) / reserveA
@@ -426,21 +427,21 @@ function calculatePriceImpact(amountA, amountB, reserveA, reserveB) {
 }
 
 /**
- * 添加流动性主函数
- * @param {Object} params - 参数对象
- * @param {Object} params.tokenA - 代币A对象 (包含 address, symbol, decimals)
- * @param {Object} params.tokenB - 代币B对象 (包含 address, symbol, decimals)
- * @param {string} params.amountA - 代币A数量（用户输入格式）
- * @param {string} params.amountB - 代币B数量（用户输入格式）
- * @param {number} params.slippageInput - 滑点容忍度（百分比，如 0.5 表示 0.5%）
- * @param {string} params.userAddress - 用户钱包地址
- * @param {string} params.routerAddress - 路由器合约地址
- * @param {string} params.wcpAddress - Wrapped CP 地址
- * @param {string} [params.nativeSymbol='CP'] - 原生币符号
- * @param {Function} [params.setTxHash] - 设置交易哈希的回调
- * @param {Function} [params.setApprovalHash] - 设置授权哈希的回调
- * @param {Function} [params.onProgress] - 进度回调函数
- * @returns {Promise<Object>} 交易结果
+ * Add liquidity main function
+ * @param {Object} params - Parameter object
+ * @param {Object} params.tokenA - Token A object (includes address, symbol, decimals)
+ * @param {Object} params.tokenB - Token B object (includes address, symbol, decimals)
+ * @param {string} params.amountA - Token A amount (user input format)
+ * @param {string} params.amountB - Token B amount (user input format)
+ * @param {number} params.slippageInput - Slippage tolerance (percentage, e.g., 0.5 means 0.5%)
+ * @param {string} params.userAddress - User wallet address
+ * @param {string} params.routerAddress - Router contract address
+ * @param {string} params.wcpAddress - Wrapped CP address
+ * @param {string} [params.nativeSymbol='CP'] - Native coin symbol
+ * @param {Function} [params.setTxHash] - Callback to set transaction hash
+ * @param {Function} [params.setApprovalHash] - Callback to set approval hash
+ * @param {Function} [params.onProgress] - Progress callback function
+ * @returns {Promise<Object>} Transaction result
  */
 export async function doAddLiquidity({
   tokenA,
@@ -462,7 +463,7 @@ export async function doAddLiquidity({
   const approvalHashes = []
   let priceImpact = 0
 
-  // 进度更新函数
+  // Progress update function
   const updateProgress = (stage, message, data = {}) => {
     console.log(`📊 Progress [${stage}]:`, message, data)
     onProgress && onProgress(stage, message, data)
@@ -470,12 +471,12 @@ export async function doAddLiquidity({
 
   try {
     console.log('🚀 Starting add liquidity process...')
-    updateProgress('start', '开始添加流动性...')
+    updateProgress('start', 'Starting to add liquidity...')
 
-    // 1. 参数验证
+    // 1. Parameter validation
     if (!userAddress || !routerAddress) throw new Error('Incomplete params')
-    if (!tokenA || !tokenB) throw new Error('代币信息不完整')
-    if (!amountA || !amountB) throw new Error('请输入有效的数量')
+    if (!tokenA || !tokenB) throw new Error('Incomplete token information')
+    if (!amountA || !amountB) throw new Error('Please enter valid amounts')
 
     console.log('📋 Add liquidity params:', {
       tokenA: { symbol: tokenA.symbol, address: tokenA.address },
@@ -487,10 +488,10 @@ export async function doAddLiquidity({
       routerAddress
     })
 
-    // 2. 滑点计算和验证
-    const slippageBN = BigInt(Math.floor(slippageInput * 100)) // 转换为基点
-    if (slippageBN < 1n || slippageBN > 5000n) { // 0.01% 到 50%
-      throw new Error('滑点设置无效，请设置在 0.01% 到 50% 之间')
+    // 2. Slippage calculation and validation
+    const slippageBN = BigInt(Math.floor(slippageInput * 100)) // Convert to basis points
+    if (slippageBN < 1n || slippageBN > 5000n) { // 0.01% to 50%
+      throw new Error('Invalid slippage setting, please set between 0.01% and 50%')
     }
 
     console.log('📊 Slippage settings:', {
@@ -498,7 +499,7 @@ export async function doAddLiquidity({
       basisPoints: slippageBN.toString()
     })
 
-    // 3. 解析金额
+    // 3. Parse amounts
     const amountAParsed = parseUnits(amountA.toString(), tokenA.decimals)
     const amountBParsed = parseUnits(amountB.toString(), tokenB.decimals)
 
@@ -507,7 +508,7 @@ export async function doAddLiquidity({
       amountB: amountBParsed.toString()
     })
 
-    // 4. 计算最小接受数量（考虑滑点）
+    // 4. Calculate minimum acceptable amounts (considering slippage)
     const amountAMinBN = (amountAParsed * (10000n - slippageBN)) / 10000n
     const amountBMinBN = (amountBParsed * (10000n - slippageBN)) / 10000n
 
@@ -516,18 +517,18 @@ export async function doAddLiquidity({
       amountBMin: amountBMinBN.toString()
     })
 
-    // 5. 设置交易截止时间（15分钟后）
+    // 5. Set transaction deadline (15 minutes later)
     const deadline = BigInt(Math.floor(Date.now() / 1000) + 900)
 
-    // 6. 获取代币地址的辅助函数
+    // 6. Helper function to get token address
     const getTokenAddress = (token) => {
       if (token.symbol === nativeSymbol) {
-        return wcpAddress // 原生币使用 WETH 地址
+        return wcpAddress // Native coin uses WETH address
       }
       return token.address
     }
 
-    // 7. 判断流动性类型
+    // 7. Determine liquidity type
     const isNativeA = tokenA.symbol === nativeSymbol
     const isNativeB = tokenB.symbol === nativeSymbol
     const hasNative = isNativeA || isNativeB
@@ -539,7 +540,7 @@ export async function doAddLiquidity({
       type: hasNative ? 'Native + ERC20' : 'ERC20 + ERC20'
     })
 
-    // 8. 检查流动性池（可选）
+    // 8. Check liquidity pool (optional)
     try {
       const factoryAddress = await readContract(config, {
         address: routerAddress,
@@ -553,13 +554,13 @@ export async function doAddLiquidity({
         getTokenAddress(tokenB)
       )
       
-      updateProgress('pool_check', poolInfo.exists ? '流动性池已存在' : '将创建新的流动性池', poolInfo)
+      updateProgress('pool_check', poolInfo.exists ? 'Liquidity pool already exists' : 'New liquidity pools will be created', poolInfo)
     } catch (error) {
       console.warn('⚠️ Pool check failed, continuing...', error)
     }
 
-    // 9. 余额验证
-    updateProgress('validation', '验证代币余额...')
+    // 9. Balance validation
+    updateProgress('validation', 'Verify token balance...')
     
     const balanceCheckA = await checkTokenBalance(
       getTokenAddress(tokenA),
@@ -576,16 +577,16 @@ export async function doAddLiquidity({
     )
 
     if (!balanceCheckA) {
-      throw new Error(`${tokenA.symbol} 余额不足`)
+      throw new Error(`${tokenA.symbol} insufficient balance`)
     }
     if (!balanceCheckB) {
-      throw new Error(`${tokenB.symbol} 余额不足`)
+      throw new Error(`${tokenB.symbol} insufficient balance`)
     }
 
     let hash
 
     if (hasNative) {
-      // Native + ERC20 流动性
+      // Native + ERC20 liquidity
       console.log('🔄 Processing Native + ERC20 liquidity')
       const erc20Token = isNativeA ? tokenB : tokenA
       const nativeAmount = isNativeA ? amountAParsed : amountBParsed
@@ -601,8 +602,8 @@ export async function doAddLiquidity({
         nativeAmountMin: nativeAmountMin.toString()
       })
 
-      // 10. 检查并授权 ERC20 代币（精确授权）
-      updateProgress('approval', `检查 ${erc20Token.symbol} 授权...`)
+      // 10. Check and approve ERC20 token (exact approval)
+      updateProgress('approval', `Check ${erc20Token.symbol} authorization...`)
 
       const approvalResult = await checkAndApproveToken(
         erc20Token.address,
@@ -619,9 +620,9 @@ export async function doAddLiquidity({
         approvalHashes.push(approvalResult.hash)
       }
 
-      updateProgress('transaction', '提交添加流动性交易...')
+      updateProgress('transaction', 'Submit a transaction to add liquidity...')
 
-      // 11. 执行添加流动性
+      // 11. Execute add liquidity
       console.log('🔄 Submitting add liquidity ETH transaction...')
       const addLiquidityGasEstimate = await computedGas(
         routerAbi,
@@ -655,7 +656,7 @@ export async function doAddLiquidity({
       console.log('✅ Native + Token liquidity submitted:', hash)
     }
     else {
-      // ERC20 + ERC20 流动性
+      // ERC20 + ERC20 liquidity
       console.log('🔄 Processing ERC20 + ERC20 liquidity')
       const tokenAAddress = getTokenAddress(tokenA)
       const tokenBAddress = getTokenAddress(tokenB)
@@ -669,7 +670,7 @@ export async function doAddLiquidity({
         amountBMin: amountBMinBN.toString()
       })
 
-      // 12. 🔥 优化：按界面显示顺序进行授权，确保用户体验一致
+      // 12. 🔥 Optimization: Approve in interface display order to ensure consistent user experience
       const tokensToApprove = [
         { token: tokenA, amount: amountAParsed, address: tokenAAddress },
         { token: tokenB, amount: amountBParsed, address: tokenBAddress }
@@ -678,7 +679,7 @@ export async function doAddLiquidity({
       console.log('🔄 Token approval order:', tokensToApprove.map(t => t.token.symbol))
 
       for (const { token, amount, address } of tokensToApprove) {
-        updateProgress('approval', `检查 ${token.symbol} 授权...`)
+        updateProgress('approval', `Check ${token.symbol} authorization...`)
 
         const approvalResult = await checkAndApproveToken(
           address,
@@ -696,9 +697,9 @@ export async function doAddLiquidity({
         }
       }
 
-      updateProgress('transaction', '提交添加流动性交易...')
+      updateProgress('transaction', 'Submit a transaction to add liquidity...')
 
-      // 13. 执行添加流动性
+      // 13. Execute add liquidity
       console.log('🔄 Submitting add liquidity transaction...')
       const addLiquidityGasEstimate = await computedGas(
         routerAbi,
@@ -732,26 +733,26 @@ export async function doAddLiquidity({
       console.log('✅ ERC20 + ERC20 liquidity submitted:', hash)
     }
 
-    // 🔥 关键修复：等待交易确认
-    updateProgress('pending', '等待交易确认...', { txHash })
+    // 🔥 Critical fix: Wait for transaction confirmation
+    updateProgress('pending', 'Waiting for transaction confirmation...', { txHash })
     console.log('⏳ Waiting for transaction confirmation:', txHash)
 
     const receipt = await waitForTransactionReceipt(config, {
       hash: txHash,
-      timeout: 120000 // 2分钟超时
+      timeout: 120000 // 2 minutes timeout
     })
 
     if (receipt.status === 'success') {
-      updateProgress('success', '交易确认成功', { 
+      updateProgress('success', 'Transaction confirmation successful', { 
         txHash, 
         priceImpact,
         gasUsed: receipt.gasUsed?.toString()
       })
       console.log('✅ Transaction confirmed successfully:', receipt.transactionHash)
       
-      // 显示成功提示
+      // Show success notification
       ElMessage({
-        message: '添加流动性成功！',
+        message: 'Liquidity added successfully!',
         type: 'success',
         duration: 5000,
         showClose: true
@@ -767,38 +768,38 @@ export async function doAddLiquidity({
         error: null
       }
     } else {
-      throw new Error('交易执行失败')
+      throw new Error('Transaction execution failed')
     }
 
   } catch (e) {
     console.error('❌ Add liquidity failed:', e)
     error = e
 
-    updateProgress('error', '交易失败', { error: e.message })
+    updateProgress('error', 'Transaction failed', { error: e.message })
 
-    // 提供更友好的错误信息
+    // Provide more friendly error messages
     let errorMessage = e.message
     if (e.message && e.message.includes('User rejected')) {
-      errorMessage = '用户取消了交易'
+      errorMessage = 'User canceled the transaction'
     } else if (e.message && e.message.includes('insufficient funds')) {
-      errorMessage = '余额不足'
+      errorMessage = 'Insufficient balance'
     } else if (e.message && e.message.includes('INSUFFICIENT_A_AMOUNT')) {
-      errorMessage = '代币A数量不足，请调整滑点或输入金额'
+      errorMessage = 'Insufficient token A amount, please adjust slippage or input amount'
     } else if (e.message && e.message.includes('INSUFFICIENT_B_AMOUNT')) {
-      errorMessage = '代币B数量不足，请调整滑点或输入金额'
+      errorMessage = 'Insufficient token B amount, please adjust slippage or input amount'
     } else if (e.message && e.message.includes('EXPIRED')) {
-      errorMessage = '交易已过期，请重试'
+      errorMessage = 'Transaction expired, please try again'
     } else if (e.message && e.message.includes('IDENTICAL_ADDRESSES')) {
-      errorMessage = '不能添加相同代币的流动性'
+      errorMessage = 'Cannot add liquidity for the same token'
     } else if (e.message && e.message.includes('ZERO_ADDRESS')) {
-      errorMessage = '无效的代币地址'
+      errorMessage = 'Invalid token address'
     } else if (e.message && e.message.includes('timeout')) {
-      errorMessage = '交易确认超时，请检查区块链浏览器'
+      errorMessage = 'Transaction confirmation timeout, please check blockchain explorer'
     } else if (e.message && e.message.includes('Gas estimation failed')) {
-      errorMessage = 'Gas 估算失败，请检查网络连接或合约地址'
+      errorMessage = 'Gas estimation failed, please check network connection or contract address'
     }
 
-    // 显示错误提示
+    // Show error notification
     ElMessage({
       message: errorMessage,
       type: 'error',

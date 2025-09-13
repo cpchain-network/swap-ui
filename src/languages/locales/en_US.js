@@ -226,6 +226,32 @@ export default {
     prohibitReasons: "Amount too large, exceeds pool liquidity",
     sure: "Confirm"
     
+  },
+  liquidity:{
+    delliquidity:"Remove liquidity",
+    confirmdel:"Confirm Delete",
+    link:"Connect Wallet",
+    Insufficient:"Insufficient balance",
+    create:"Create a pool and add liquidity",
+    title :"Adding V2 liquidity",
+    balance:"Balance",
+    enter:"Please enter the amount",
+    Calculat:"Calculating",
+    position:"My Position",
+    pool:"Pool",
+    token0:"token0",
+    token1:"token1",
+    APR:"APR",
+    TVL:"TVL",
+    USERblance:"UserBalance",
+    Token0deposit:"Token0 deposit",
+    Token1deposit:"Token01 deposit",
+    PoolPercentage:"Pool Percentage",
+    operate:"operate",
+    del:"delete",
+    newCretate:"You will create a new liquidity pool !",
+    addCreate:"The pool already exists, add liquidity at the current ratio!",
+    errorCreate:"Failed to obtain pool information, please check the network connection!"
   }
   
 };

@@ -2,11 +2,11 @@
   <div v-if="visible" class="modal-mask">
     <div class="modal-box">
       <div class="modal-title">
-        <span>删除流动性</span>
+        <span>{{ $t('liquidity.delliquidity') }}</span>
         <span class="close-btn" @click="close">×</span>
       </div>
       
-      <!-- 百分比选择按钮 -->
+      <!-- Percentage selection buttons -->
  
       
       <div class="modal-content">
@@ -19,10 +19,10 @@
           @keydown.stop
           @keypress="onKeyPress"
           @paste.prevent
-          placeholder="输入LP Token数量"
+          placeholder=""
           autocomplete="off"
         />
-        <span class="modal-unit">LP</span>
+        <!-- <span class="modal-unit">LP</span> -->
       </div>
       <div class="percentage-buttons">
         <div 
@@ -35,7 +35,7 @@
         </div>
       </div>
       <div class="balance-info">
-        <span>余额: {{ maxBalance }} LP</span>
+        <span> {{ $t('liquidity.balance') }}: {{ formattedMaxBalance }} </span>
       </div>
       
       <div v-if="warn" class="modal-warn">{{ warn }}</div>
@@ -45,7 +45,7 @@
         @click="confirm"
         :disabled="!displayValue || parseFloat(displayValue) <= 0"
       >
-        确认删除
+      {{ $t('liquidity.delliquidity') }}
       </button>
     </div>
   </div>
@@ -70,6 +70,11 @@ const warn = ref('')
 
 const maxBalanceNum = computed(() => {
   return parseFloat(props.maxBalance) || 0
+})
+
+// Add formatted maxBalance with 6 decimal places
+const formattedMaxBalance = computed(() => {
+  return maxBalanceNum.value.toFixed(6)
 })
 
 watch(() => props.visible, (newVal) => {
@@ -97,27 +102,27 @@ function trimTrailingZeros(str) {
 
 function handleInput(e) {
   warn.value = ''
-  selectedPercent.value = null // 手动输入时清除百分比选择
+  selectedPercent.value = null // Clear percentage selection when manually inputting
   
   let val = e.target.value
-  // 只允许数字和小数点
+  // Only allow numbers and decimal points
   val = val.replace(/[^\d.]/g, '')
-  // 移除开头的0
+  // Remove leading zeros
   val = val.replace(/^0+(\d)/, '$1')
-  // 处理多个小数点
+  // Handle multiple decimal points
   val = val.replace(/\.{2,}/g, '.')
   val = val.replace('.', '$#$').replace(/\./g, '').replace('$#$', '.')
   
-  // 限制小数位数
+  // Limit decimal places
   const parts = val.split('.')
   if (parts[1] && parts[1].length > 6) {
     parts[1] = parts[1].slice(0, 6)
   }
   val = parts.join('.')
   
-  // 检查是否超过最大余额
+  // Check if exceeds maximum balance
   if (val && parseFloat(val) > maxBalanceNum.value) {
-    warn.value = `超过最大余额 ${props.maxBalance} LP`
+    warn.value = `Exceeds maximum balance ${formattedMaxBalance.value} `
     val = String(maxBalanceNum.value)
   }
   
@@ -133,10 +138,10 @@ function onBlur() {
   
   let num = Number(val)
   if (num < 0) {
-    warn.value = '数量不能为负数'
+    warn.value = 'Amount cannot be negative'
     num = 0
   } else if (num > maxBalanceNum.value) {
-    warn.value = `超过最大余额 ${props.maxBalance} LP`
+    warn.value = `Exceeds maximum balance ${formattedMaxBalance.value}`
     num = maxBalanceNum.value
   }
   
@@ -153,18 +158,18 @@ function onKeyPress(e) {
 function confirm() {
   let val = displayValue.value
   if (val === '' || isNaN(Number(val))) {
-    warn.value = '请输入有效的LP Token数量'
+    warn.value = 'Please enter a valid LP Token amount'
     return
   }
   
   let num = Number(val)
   if (num <= 0) {
-    warn.value = 'LP Token数量必须大于0'
+    warn.value = 'LP Token amount must be greater than 0'
     return
   }
   
   if (num > maxBalanceNum.value) {
-    warn.value = `超过最大余额 ${props.maxBalance} LP`
+    warn.value = `Exceeds maximum balance ${formattedMaxBalance.value} `
     return
   }
   

@@ -18,7 +18,7 @@ export default {
       menu: {
         name1: 'Mainnet',
         name2: 'Testnet',
-      
+
       }
     },
     meun2: {
@@ -70,8 +70,8 @@ export default {
       Japanese: "日语"
     },
     link: "连接钱包",
-    warining:"检测到浏览器里有多个钱包插件,请保留一个!",
-    add:"请启用该插件!"
+    warining: "检测到浏览器里有多个钱包插件,请保留一个!",
+    add: "请启用该插件!"
 
   },
   blockOne: {
@@ -113,25 +113,25 @@ export default {
     title: "CP Chain路线图",
     blockOne: {
       title: "2025 Q3 - Q4",
-      silde:"基础建设与生态启动",
+      silde: "基础建设与生态启动",
       name1: " 主网正式上线",
       name2: "代币发行与交易支持",
       name3: "启动全球节点计划",
-    
+
       name4: "首批生态扶持计划 "
     },
     blockTwo: {
       title: "2026 Q1 - Q2",
-      silde:"生态扩张与价值捕获",
+      silde: "生态扩张与价值捕获",
       name1: " 生态项目多样性与持续增长",
       name2: "打通CEX手续费通道和回购通道",
       name3: "发布API/SDK，构建开发者生态",
       name4: "启动去中心化治理机制",
 
     },
-    blockThree:{
+    blockThree: {
       title: "2026 Q3 - Future",
-      silde:"全球品牌与破圈应用",
+      silde: "全球品牌与破圈应用",
       // 从网络到市场，释放真实价值
       name1: "接入主流金融及衍生品",
       name2: "加速 CP Chain 实体产业落地应用",
@@ -179,7 +179,7 @@ export default {
     content1: {
       title: "网络",
       name1: "Mainnet",
-      name2:"Testnet"
+      name2: "Testnet"
     },
     content2: {
       title: "生态系统",
@@ -199,7 +199,7 @@ export default {
       name1: "兑换",
       name2: "水龙头",
       name3: "批量转账",
-      
+
       name4: "跨链桥",
       name5: "铸造",
     }
@@ -221,21 +221,47 @@ export default {
     "personal_center": "个人中心",
     "sign_out": "退出"
   },
-  swap :{
-    title:"随时随地，轻松兑换",
-    sell:"出售",
-    buy:"购买",
-    balance:"余额",
-    rateWarn:"滑点后最小可得",
-    rate:"当前汇率",
-    nofund:"余额不足",
-    setSlip:"滑点设置",
-    setSliptitle:"设置交易滑点",
-    selicons:"选择币种",
-    basicons:"常用币种",
-    searchicons:"搜索币种",
-    doswaps:"兑换",
-    prohibitReasons:"输入金额过大，超过池子可兑换额度",
-    sure:"确定"
+  swap: {
+    title: "随时随地，轻松兑换",
+    sell: "出售",
+    buy: "购买",
+    balance: "余额",
+    rateWarn: "滑点后最小可得",
+    rate: "当前汇率",
+    nofund: "余额不足",
+    setSlip: "滑点设置",
+    setSliptitle: "设置交易滑点",
+    selicons: "选择币种",
+    basicons: "常用币种",
+    searchicons: "搜索币种",
+    doswaps: "兑换",
+    prohibitReasons: "输入金额过大，超过池子可兑换额度",
+    sure: "确定"
+  },
+  liquidity: {
+    delliquidity:"删除流动性",
+    confirmdel:"确认删除",
+link : "连接钱包",
+ Insufficient : "余额不足",
+ create : "创建池子并添加流动性",
+    title: "添加V2流动性",
+    balance: "余额",
+    enter: "请输入金额",
+    Calculat: "计算中",
+    position: "我的持仓",
+    pool: "流动性池",
+    token0: "代币0",
+    token1: "代币1",
+    APR: "年化收益率",
+    TVL: "总锁定价值",
+    USERblance: "用户余额",
+    Token0deposit: "代币0存入量",
+    Token1deposit: "代币1存入量",
+    PoolPercentage: "池子占比",
+    operate: "操作",
+    del: "删除",
+    newCretate: "您将创建一个新的流动性池！",
+    addCreate: "池子已存在，按当前比例添加流动性！",
+    errorCreate: "获取池子信息失败，请检查网络连接！"
   }
 };

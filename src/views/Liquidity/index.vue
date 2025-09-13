@@ -1,7 +1,7 @@
 <template>
     <div id="Liquidity">
         <div class="contents">
-            <h1>添加V2流动性</h1>
+            <h1> {{ $t('liquidity.title') }}</h1>
             <div class="swap-card">
                 <div class="opt">
                     <div class="btn" @click="selIcon(1, fromSymbol)">
@@ -39,7 +39,7 @@
                         <input type="number" class="swap-amount-input" v-model.trim="amountIn" @input="onAmountInChange"
                             :disabled="isCalculating" placeholder="0.0">
                         <div v-if="isCalculating && independentField === 'INPUT'" class="calculating-indicator">
-                            计算中...
+                            {{ $t('liquidity.Calculat') }}...
                         </div>
                     </div>
                     <div class="bottom">
@@ -49,7 +49,7 @@
                                 @click="fromBalanceTab(item)">{{ item }}%</div>
                         </div>
                         <div class="right">
-                            余额 {{ trimTrailingZeros(fromBalance) }}
+                            {{ $t('liquidity.balance') }}: {{ trimTrailingZeros(fromBalance) }}
                         </div>
                     </div>
                 </div>
@@ -63,7 +63,7 @@
                         <input type="number" class="swap-amount-input" v-model.trim="amountOut" @input="onAmountOutChange"
                             :disabled="isCalculating" placeholder="0.0">
                         <div v-if="isCalculating && independentField === 'OUTPUT'" class="calculating-indicator">
-                            计算中...
+                            {{ $t('liquidity.Calculat') }}...
                         </div>
                     </div>
                     <div class="bottom">
@@ -73,7 +73,7 @@
                                 {{ item }}%</div>
                         </div>
                         <div class="right">
-                            余额 {{ trimTrailingZeros(toBalance) }}
+                            {{ $t('liquidity.balance') }}: {{ trimTrailingZeros(toBalance) }}
                         </div>
                     </div>
                 </div>
@@ -81,13 +81,13 @@
                 <!-- 池子状态信息 -->
                 <div v-if="poolStatus" class="pool-status">
                     <div v-if="poolStatus === 'new'" class="status-new">
-                        您将创建新的流动性池
+                        {{ $t('liquidity.newCretate') }}
                     </div>
                     <div v-else-if="poolStatus === 'exists'" class="status-exists">
-                        池子已存在，按当前比例添加流动性
+                        {{ $t('liquidity.addCreate') }}
                     </div>
                     <div v-else-if="poolStatus === 'error'" class="status-error">
-                        获取池子信息失败，请检查网络连接
+                        {{ $t('liquidity.errorCreate') }}
                     </div>
                 </div>
 
@@ -102,7 +102,7 @@
                     </span>
                 </div>
 
-                <button class="swap-main-btn" @click="sure()" :disabled="!canAddLiquidity">
+                <button class="swap-main-btn" @click="sure()" :disabled="isProcess||!canAddLiquidity">
                     {{ buttonText }}
                 </button>
             </div>
@@ -118,25 +118,25 @@
 
         <div class="myPosition">
             <div class="container">
-                <h3>我的仓位</h3>
-                <table>
+                <h3>{{ $t('liquidity.position') }}</h3>
+                <table v-if="userBalances1.length > 0">
                     <thead>
                         <tr>
-                            <th>池子</th>
-                            <th>token0</th>
-                            <th>token1</th>
-                            <th>APR</th>
-                            <th class="dis">TVL</th>
-                            <th>用户余额</th>
-                            <th>Token0存入</th>
-                            <th>Token1存入</th>
-                            <th>池子百分比</th>
-                            <th>操作</th>
+                            <th>{{ $t('liquidity.pool') }}</th>
+                            <th>{{ $t('liquidity.token0') }}</th>
+                            <th>{{ $t('liquidity.token1') }}</th>
+                            <th>{{ $t('liquidity.APR') }}</th>
+                            <th class="dis">{{ $t('liquidity.TVL') }}</th>
+                            <th>{{ $t('liquidity.USERblance') }}</th>
+                            <th>{{ $t('liquidity.Token0deposit') }}</th>
+                            <th>{{ $t('liquidity.Token1deposit') }}</th>
+                            <th>{{ $t('liquidity.PoolPercentage') }}</th>
+                            <th>{{ $t('liquidity.operate') }}</th>
                         </tr>
                     </thead>
                     <tbody>
 
-                        <tr v-for="item  in   userBalances1">
+                        <tr v-for="item  in   filteredUserBalances">
                             <td>{{ item.name }}</td>
                             <td>{{ item.token0Symbol == 'WCP' ? 'CP' : item.token0Symbol }}</td>
                             <td>{{ item.token1Symbol }}</td>
@@ -149,12 +149,54 @@
                             <td>{{ item.poolTokenPercentage }}</td>
                             <td>
 
-                                <el-button type="danger" link @click="del(item)">删除</el-button>
+                                <el-button type="danger" link @click="del(item)">{{ $t('liquidity.del') }}</el-button>
                             </td>
 
                         </tr>
                     </tbody>
                 </table>
+                <ul v-for="item  in   filteredUserBalances">
+                    <li>
+                        <b>{{ $t('liquidity.pool') }}</b>
+                        <span>{{ item.name }}</span>
+                    </li>
+                    <li>
+                        <b class="sendName">{{ $t('liquidity.token0') }}</b>
+                        <span>{{ item.token0Symbol == 'WCP' ? 'CP' : item.token0Symbol }}</span>
+                    </li>
+                    <li>
+                        <b class="sendName">{{ $t('liquidity.token1') }}</b>
+                        <span>{{ item.token1Symbol }}</span>
+                    </li>
+                    <li>
+                        <b class="sendName">{{ $t('liquidity.APR') }}</b>
+                        <span>{{ item.apr }}</span>
+                    </li>
+                    <li>
+                        <b class="sendName">{{ $t('liquidity.TVL') }}</b>
+                        <span>{{ item.tvl }}</span>
+                    </li>
+                    <li>
+                        <b class="sendName">{{ $t('liquidity.USERblance') }}</b>
+                        <span>{{ item.userPoolBalance }}</span>
+                    </li>
+                    <li>
+                        <b class="sendName">{{ $t('liquidity.Token0deposit') }}</b>
+                        <span>{{ item.token0Deposited }}</span>
+                    </li>
+                    <li>
+                        <b class="sendName">{{ $t('liquidity.Token1deposit') }}</b>
+                        <span>{{ item.token1Deposited }}</span>
+                    </li>
+                    <li>
+                        <b class="sendName">{{ $t('liquidity.PoolPercentage') }}</b>
+                        <span>{{ item.poolTokenPercentage }}</span>
+                    </li>
+                    <li>
+                        <b class="sendName">{{ $t('liquidity.operate') }}</b>
+                        <el-button type="danger" link @click="del(item)">{{ $t('liquidity.del') }}</el-button>
+                    </li>
+                </ul>
             </div>
 
         </div>
@@ -189,22 +231,31 @@ import {
 import { getPoolReserves, getSdkToken, isPairAvailable, getPairAddress } from '../swap/uniswapQuote.js'
 import doAddLiquidity from './doAddLiquidity.js'
 import { doRemoveLiquidity } from './doRemoveLiquidity.js'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 const { connect, connectors, error } = useConnect();
 const { address, status } = useAccount()
 const current = ref()
 const showRemoveModal = ref(false)
 const lpBalance = ref(0)
-
-const  selItem=ref({})
+const  isProcess = ref(false)
+const selItem = ref({})
 const ROUTER_ADDRESS = '0x4cFBbe212366bf31DF01F5188d759c738a757509' // Uniswap V2 Router
 const WRAPPED_CP_ADDRESS = '0xC18eA88732464dc5E38372A7Fb1d30b56Dd0E4d5' // WETH 地
 // 代币配置
 import { CPChainAPRCalculator } from "./lpTokenListManager.js"
 const userBalances1 = ref([])
+const filteredUserBalances = computed(() => {
+    return userBalances1.value.filter(item => {
+        const balance = parseFloat(item.userPoolBalance || '0')
+        return balance > 0
+    })
+})
 // import { generateLPTokenList } from '@/views/Liquidity/lpTokenListManager.js'
 onMounted(async () => {
     // 创建实例
-   
+
 })
 
 
@@ -222,10 +273,10 @@ const allAcconts = ref([
     { symbol: 'USDT', decimals: 18, token: new Token(86606, '0x6C255b22864bBC176431c42695D16f41576e5618', 18, 'USDT', 'Tether USD'), icon: usdtIcon, blance: 0, isNative: false },
     { symbol: 'USDC', decimals: 18, token: new Token(86606, '0xb884F1C92AF157dD3dcC54512a595b1D9531423d', 18, 'USDC', 'USD//C'), icon: usdcIcon, blance: 0, isNative: false },
 ])
-const  mapAcconts={
+const mapAcconts = {
     USDT: new Token(86606, '0x6C255b22864bBC176431c42695D16f41576e5618', 18, 'USDT', 'Tether USD'),
-  USDC: new Token(86606, '0xb884F1C92AF157dD3dcC54512a595b1D9531423d', 18, 'USDC', 'USD//C'),
-  WCP: new Token(86606, '0xC18eA88732464dc5E38372A7Fb1d30b56Dd0E4d5', 18, 'WCP', 'Wrapped CP')
+    USDC: new Token(86606, '0xb884F1C92AF157dD3dcC54512a595b1D9531423d', 18, 'USDC', 'USD//C'),
+    WCP: new Token(86606, '0xC18eA88732464dc5E38372A7Fb1d30b56Dd0E4d5', 18, 'WCP', 'Wrapped CP')
 }
 
 // 基础状态
@@ -284,17 +335,18 @@ const canAddLiquidity = computed(() => {
     if (parseFloat(amountIn.value) <= 0 || parseFloat(amountOut.value) <= 0) return false
     if (parseFloat(amountIn.value) > parseFloat(fromBalance.value)) return false
     if (parseFloat(amountOut.value) > parseFloat(toBalance.value)) return false
+    
     return true
 })
 
 const buttonText = computed(() => {
-    if (!connected.value) return '请连接钱包'
-    if (isCalculating.value) return '计算中...'
-    if (!amountIn.value || !amountOut.value) return '请输入金额'
-    if (parseFloat(amountIn.value) > parseFloat(fromBalance.value)) return `${fromSymbol.value} 余额不足`
-    if (parseFloat(amountOut.value) > parseFloat(toBalance.value)) return `${toSymbol.value} 余额不足`
-    if (poolStatus.value === 'new') return '创建池子并添加流动性'
-    return '添加V2流动性'
+    if (!connected.value) return t('liquidity.link')
+    if (isCalculating.value) return t('liquidity.Calculat')
+    if (!amountIn.value || !amountOut.value) return t('liquidity.enter')
+    if (parseFloat(amountIn.value) > parseFloat(fromBalance.value)) return `${fromSymbol.value}  ${t('liquidity.Insufficient')}`
+    if (parseFloat(amountOut.value) > parseFloat(toBalance.value)) return `${toSymbol.value}  ${t('liquidity.Insufficient')}`
+    if (poolStatus.value === 'new') return t('liquidity.create')
+    return t('liquidity.title')
 })
 
 // ERC20 ABI
@@ -495,24 +547,24 @@ async function connectWallet() {
         connected.value = true
         var result = await fetchAllBalancesV6(provider, userAddress.value, allAcconts.value)
         console.log(result)
-        
+
     }
 }
 async function handleRemoveLiquidity(amount) {
     console.log('选中的池子信息:', selItem.value)
-    
+
     if (!selItem.value || !selItem.value.token0Symbol || !selItem.value.token1Symbol) {
         console.error('缺少池子信息')
         return
     }
-    
+
     const poolInfo = selItem.value
-    
+
     try {
         // 从 mapAcconts 获取代币信息
         const token0Info = mapAcconts[poolInfo.token0Symbol]
         const token1Info = mapAcconts[poolInfo.token1Symbol]
-        
+
         if (!token0Info || !token1Info) {
             console.error('代币信息不完整:', {
                 token0Symbol: poolInfo.token0Symbol,
@@ -522,7 +574,7 @@ async function handleRemoveLiquidity(amount) {
             })
             return
         }
-        
+
         // 构建删除流动性参数
         const removeParams = {
             tokenA: {
@@ -543,16 +595,16 @@ async function handleRemoveLiquidity(amount) {
             wcpAddress: WRAPPED_CP_ADDRESS,
             nativeSymbol: 'CP'
         }
-        
+
         console.log('删除流动性参数:', removeParams)
-        
+
         // 调用删除流动性函数
         const result = await doRemoveLiquidity(removeParams)
-        
+
         if (result.success) {
             console.log('删除流动性成功:', result)
             // 刷新用户余额
-         
+
             // 关闭弹窗
             showRemoveModal.value = false
             // 清空选中项
@@ -561,7 +613,7 @@ async function handleRemoveLiquidity(amount) {
         } else {
             console.error('删除流动性失败:', result.error)
         }
-        
+
     } catch (error) {
         console.error('删除流动性出错:', error)
     }
@@ -590,8 +642,8 @@ async function fetchAllBalancesV6(provider, address, tokenList) {
     isfromprocess.value = false
     tofromprocess.value = false
     const calculator = new CPChainAPRCalculator()
-            const userBalances = await calculator.getUserAllLPBalances(address)
-            userBalances1.value = userBalances
+    const userBalances = await calculator.getUserAllLPBalances(address)
+    userBalances1.value = userBalances
     return tokenList
 }
 
@@ -604,7 +656,8 @@ async function fetchAllBalancesV6(provider, address, tokenList) {
 async function sure() {
     if (!canAddLiquidity.value) return
 
-    try {
+    try { 
+        isProcess.value=true
         // 获取代币信息
         const fromToken = allAcconts.value.find(acc => acc.symbol === fromSymbol.value)
         const toToken = allAcconts.value.find(acc => acc.symbol === toSymbol.value)
@@ -695,6 +748,8 @@ async function sure() {
             throw new Error(result.error || '添加流动性失败')
         }
 
+        isProcess.value=false
+
     } catch (error) {
         console.error('添加流动性失败:', error)
 
@@ -715,7 +770,7 @@ async function sure() {
         } else if (error.message) {
             errorMessage = error.message
         }
-
+        isProcess.value=false
         // alert(errorMessage)
     }
 }
@@ -761,9 +816,10 @@ watch(
     justify-content: center;
     flex-wrap: wrap;
     align-items: center;
+    padding-top: 60px;
 
     .contents {
-        padding-bottom: 80px;
+        padding-bottom: 30px;
     }
 
     .myPosition {
@@ -820,9 +876,123 @@ watch(
                 }
             }
 
+            ul {
+                display: none;
+            }
+
 
         }
 
+    }
+
+    @media (max-width: 768px) {
+        .myPosition {
+            width: 100%;
+            display: flex;
+            // align-items: center;
+            justify-content: center;
+
+            .container {
+                flex: 1;
+                padding: 0 15px;
+                max-width: 1200px;
+
+                h3 {
+                    color: #fff;
+                    font-size: 18px;
+                    font-style: normal;
+                    font-weight: 500;
+                    line-height: normal;
+                }
+
+                table {
+                    width: 100%;
+                    display: none;
+
+                    thead {
+                        tr {
+                            height: 64px;
+
+                            th {
+                                color: var(---, #8E8E92);
+                                font-size: 12px;
+                                font-style: normal;
+                                font-weight: 400;
+                                line-height: normal;
+                                height: 40px;
+                                text-align: left;
+                                flex: 1;
+                            }
+                        }
+                    }
+
+                    tbody {
+                        tr {
+                            height: 64px;
+
+                            td {
+                                flex: 1;
+                                color: #fff;
+                                font-size: 14px;
+                                font-style: normal;
+                                font-weight: 500;
+                                line-height: normal;
+                            }
+                        }
+                    }
+                }
+
+                ul {
+                    display: block;
+                    list-style: none;
+                    margin: 16px 0;
+                    border-bottom: 0.5px solid #2E2F32;
+                    ;
+
+                    li:first-child {
+                        height: 21px;
+                        margin-bottom: 12px;
+                    }
+
+                    li {
+                        display: flex;
+                        margin-bottom: 8px;
+                        justify-content: space-between;
+                        align-items: center;
+
+                        :deep(.el-button) {
+                            font-size: 12px !important;
+                        }
+
+                        b {
+                            color: #f3f5f6;
+                            font-size: 15px;
+                            font-style: normal;
+                            font-weight: 500;
+                            line-height: normal;
+                        }
+
+                        .sendName {
+                            color: #8e8e92 !important;
+                            font-size: 12px !important;
+                            font-style: normal;
+                            font-weight: 400 !important;
+                            line-height: normal;
+                        }
+
+                        span {
+                            color: #8e8e92;
+                            font-size: 12px;
+                            font-style: normal;
+                            font-weight: 400;
+                            line-height: normal
+                        }
+                    }
+                }
+
+            }
+
+        }
     }
 
     h1 {
@@ -1100,7 +1270,7 @@ input[type="number"] {
         padding-top: 60px;
 
         .contents {
-            padding-bottom: 80px;
+            padding-bottom: 30px;
         }
 
         h1 {
