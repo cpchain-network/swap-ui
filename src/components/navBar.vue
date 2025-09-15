@@ -417,7 +417,7 @@ watch(status, (newStatus) => {
     showConnet.value = false;
   }
 });
-const rpcUrl = 'https://cp-geth-rpc1-testnet.cpchain.com'
+const rpcUrl = 'https://rpc-testnet.cpchain.com'
 
 // 使用 ethers 提供的 JSON RPC Provider
 const provider = new JsonRpcProvider(rpcUrl)
