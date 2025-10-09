@@ -32,7 +32,7 @@
                             <div class="token-symbol">{{ token.symbol }}</div>
                             <div class="token-address">{{ formatAddress(token.token?.address) }}</div>
                         </div>
-                        <div class="token-balance">{{ trimTrailingZeros(token.balance ?? token.blance) }}</div>
+                        <div class="token-balance">{{ trimTrailingZeros( token.blance) }}</div>
                     </div>
                 </div>
             </div>

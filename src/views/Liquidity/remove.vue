@@ -53,6 +53,9 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
   visible: Boolean,
@@ -122,7 +125,7 @@ function handleInput(e) {
   
   // Check if exceeds maximum balance
   if (val && parseFloat(val) > maxBalanceNum.value) {
-    warn.value = `Exceeds maximum balance ${formattedMaxBalance.value} `
+    warn.value = `${t('liquidity.removeModel.exceedsMaxBalance')} ${formattedMaxBalance.value}`
     val = String(maxBalanceNum.value)
   }
   
@@ -138,10 +141,10 @@ function onBlur() {
   
   let num = Number(val)
   if (num < 0) {
-    warn.value = 'Amount cannot be negative'
+    warn.value = t('liquidity.removeModel.amountCannotBeNegative')
     num = 0
   } else if (num > maxBalanceNum.value) {
-    warn.value = `Exceeds maximum balance ${formattedMaxBalance.value}`
+    warn.value = `${t('liquidity.removeModel.exceedsMaxBalance')} ${formattedMaxBalance.value}`
     num = maxBalanceNum.value
   }
   
@@ -158,18 +161,18 @@ function onKeyPress(e) {
 function confirm() {
   let val = displayValue.value
   if (val === '' || isNaN(Number(val))) {
-    warn.value = 'Please enter a valid LP Token amount'
+    warn.value = t('liquidity.removeModel.pleaseEnterValidAmount')
     return
   }
   
   let num = Number(val)
   if (num <= 0) {
-    warn.value = 'LP Token amount must be greater than 0'
+    warn.value = t('liquidity.removeModel.amountMustBeGreaterThanZero')
     return
   }
   
   if (num > maxBalanceNum.value) {
-    warn.value = `Exceeds maximum balance ${formattedMaxBalance.value} `
+    warn.value = `${t('liquidity.removeModel.exceedsMaxBalance')} ${formattedMaxBalance.value}`
     return
   }
   

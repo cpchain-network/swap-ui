@@ -15,7 +15,7 @@
           @keydown.stop
           @keypress="onKeyPress"
           @paste.prevent
-          placeholder=" slippage (0.000001~50)"
+          :placeholder="$t('swap.slippagePlaceholder')"
           autocomplete="off"
         />
         <span class="modal-percent">%</span>
@@ -70,7 +70,7 @@ function handleInput(e) {
   displayValue.value = val
 
   if (val && parseFloat(val) > MAX) {
-    warn.value = `Maximum allowed is ${MAX}%`
+    warn.value = `${t('swap.maximumAllowedEn')} ${MAX}%`
     displayValue.value = String(MAX)
   }
 }
@@ -83,10 +83,10 @@ function onBlur() {
   }
   let num = Number(val)
   if (num < MIN) {
-    warn.value = `Minimum allowed is ${MIN}%`
+    warn.value = `${t('swap.minimumAllowedEn')} ${MIN}%`
     num = MIN
   } else if (num > MAX) {
-    warn.value = `Maximum allowed is ${MAX}%`
+    warn.value = `${t('swap.maximumAllowedEn')} ${MAX}%`
     num = MAX
   }
   displayValue.value = String(Number(num.toFixed(6)))
@@ -102,17 +102,17 @@ function onKeyPress(e) {
 function confirm() {
   let val = displayValue.value
   if (val === '' || isNaN(Number(val))) {
-    warn.value = '请输入有效数字'
+    warn.value = t('swap.invalidNumber')
     displayValue.value = String(MIN)
     return
   }
   let num = Number(val)
   if (num < MIN) {
-    warn.value = `最小为 ${MIN}%`
+    warn.value = `${t('swap.minimumAllowed')} ${MIN}%`
     num = MIN
   }
   if (num > MAX) {
-    warn.value = `最大只能为 ${MAX}%`
+    warn.value = `${t('swap.maximumAllowed')} ${MAX}%`
     num = MAX
   }
   num = Number(num.toFixed(6))

@@ -222,6 +222,7 @@ export default {
     "sign_out": "退出"
   },
   swap: {
+    connectWallet: "连接钱包",
     title: "随时随地，轻松兑换",
     sell: "出售",
     buy: "购买",
@@ -236,14 +237,49 @@ export default {
     searchicons: "搜索币种",
     doswaps: "兑换",
     prohibitReasons: "输入金额过大，超过池子可兑换额度",
-    sure: "确定"
+    sure: "确定",
+    slippagePlaceholder: "滑点 (0.000001~50)",
+    invalidNumber: "请输入有效数字",
+    minimumAllowed: "最小为",
+    maximumAllowed: "最大只能为",
+    minimumAllowedEn: "最小允许值为",
+    maximumAllowedEn: "最大允许值为",
+
+    // doSwap 提示语
+    messages: {
+      // ElMessage 提示语
+      approvalSubmitted: '授权已提交，等待确认...',
+      userReject: '用户拒绝！',
+      insufficientFunds: '余额不足！',
+      slippageTooHigh: '滑点过高，请尝试增加滑点容忍度！',
+      swapFail: '兑换失败！',
+      swapSuccess: '兑换成功!',
+
+      // 错误消息
+      userCancelledAuth: '用户取消了授权操作',
+      userCancelledTransaction: '用户取消了交易操作',
+      insufficientBalance: '余额不足',
+      slippageError: '滑点过高，请增加滑点容忍度',
+      swapFailed: '兑换失败：请稍后重试！',
+      transactionSuccess: '交易提交成功',
+
+      // 错误类型
+      tokenUndefined: '代币未定义',
+      noValidTrade: '无有效的交易对象',
+      tokenNotDefined: '代币未定义',
+      incompleteParams: '参数不完整',
+      invalidSlippage: '无效的滑点输入',
+      slippageTooLow: '滑点过低，可能导致交易失败',
+      sameTokenSwap: '不允许相同代币兑换',
+      allowanceError: '检查/设置授权失败：'
+    }
   },
   liquidity: {
-    delliquidity:"删除流动性",
-    confirmdel:"确认删除",
-link : "连接钱包",
- Insufficient : "余额不足",
- create : "创建池子并添加流动性",
+    delliquidity: "删除流动性",
+    confirmdel: "确认删除",
+    link: "连接钱包",
+    Insufficient: "余额不足",
+    create: "创建池子并添加流动性",
     title: "添加V2流动性",
     balance: "余额",
     enter: "请输入金额",
@@ -262,6 +298,101 @@ link : "连接钱包",
     del: "删除",
     newCretate: "您将创建一个新的流动性池！",
     addCreate: "池子已存在，按当前比例添加流动性！",
-    errorCreate: "获取池子信息失败，请检查网络连接！"
+    errorCreate: "获取池子信息失败，请检查网络连接！",
+    MESSAGE_FIELDS: {
+      // 基础进度提示
+      progress_start: '开始添加流动性...',
+      progress_validation: '验证代币余额...',
+      progress_approval: '检查',
+      progress_transaction: '提交添加流动性交易...',
+      progress_pending: '等待交易确认...',
+      progress_success: '交易确认成功',
+      progress_error: '交易失败',
+
+      // 流动性池检查
+      progress_pool_check_exists: '流动性池已存在',
+      progress_pool_check_new: '将创建新的流动性池',
+
+      // 授权相关进度
+      approval_check: '授权状态检查',
+      approval_pending: '正在授权',
+      approval_confirming: '等待授权确认',
+      approval_success: '授权确认成功',
+      approval_sufficient: '授权额度充足，无需重新授权',
+      approval_error: '授权失败',
+
+      // ElMessage 提示信息
+      authorization_submitted: '授权已提交，等待确认...',
+      authorization_success: '授权确认成功',
+      liquidity_added_success: '流动性添加成功！',
+
+      // 错误消息
+      error_authorization_canceled: '用户取消了授权操作',
+      error_authorization_failed: '授权失败',
+      error_insufficient_token_balance: '余额不足',
+      error_transaction_failed: '交易执行失败',
+      error_user_canceled: '用户取消了交易',
+      error_insufficient_balance: '余额不足',
+      error_insufficient_a_amount: '代币A数量不足，请调整滑点或输入金额',
+      error_insufficient_b_amount: '代币B数量不足，请调整滑点或输入金额',
+      error_expired: '交易已过期，请重试',
+      error_identical_addresses: '不能为同一代币添加流动性',
+      error_zero_address: '无效的代币地址',
+      error_timeout: '交易确认超时，请检查区块链浏览器',
+      error_gas_estimation: 'Gas估算失败，请检查网络连接或合约地址'
+    },
+    MESSAGE_FIELDS2: {
+      // 基础进度提示
+      startProgress: '开始移除流动性...',
+      validationProgress: '验证参数...',
+      poolInfoProgress: '获取流动性池信息...',
+      approvalProgress: '检查LP代币授权...',
+      transactionProgress: '提交移除流动性交易...',
+      pendingProgress: '等待交易确认...',
+      successProgress: '交易确认成功',
+      errorProgress: '交易失败',
+
+      // 参数验证相关
+      incompleteParams: '参数不完整',
+      incompleteTokenInfo: '代币信息不完整',
+      invalidLPAmount: '请输入有效的LP代币数量',
+      invalidSlippage: '滑点设置无效，请设置在0.01%到50%之间',
+
+      // LP代币余额验证
+      insufficientLPBalance: 'LP代币余额不足',
+
+      // 授权相关进度
+      approvalCheck: '检查LP代币授权状态...',
+      approvalPending: 'LP代币授权待处理...',
+      approvalSubmitted: 'LP代币授权已提交，等待确认...',
+      approvalConfirming: '正在确认LP代币授权...',
+      approvalSuccess: 'LP代币授权确认成功',
+      approvalSuccessProgress: 'LP代币授权成功',
+      approvalSufficient: 'LP代币授权充足，无需重新授权',
+
+      // ElMessage 提示信息
+      successMessage: '移除流动性成功！',
+
+      // 错误消息
+      userCancelledApproval: '用户取消了授权操作',
+      approvalFailed: 'LP代币授权失败',
+      approvalError: 'LP代币授权出错',
+      transactionFailed: '交易执行失败',
+      userCancelled: '用户取消了交易',
+      insufficientBalance: '余额不足',
+      insufficientLiquidity: 'LP代币数量不足',
+      insufficientAmountA: 'tokenA数量不足，请调整滑点',
+      insufficientAmountB: 'tokenB数量不足，请调整滑点',
+      transactionExpired: '交易已过期，请重试',
+      transactionTimeout: '交易确认超时，请检查区块链浏览器',
+      gasEstimationFailed: 'Gas估算失败，请检查网络连接或合约地址'
+    },
+
+    removeModel: {
+      exceedsMaxBalance: '超过最大余额',
+      amountCannotBeNegative: '金额不能为负数',
+      pleaseEnterValidAmount: '请输入有效的LP代币数量',
+      amountMustBeGreaterThanZero: 'LP代币数量必须大于0'
+    }
   }
 };

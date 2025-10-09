@@ -13,7 +13,8 @@
           <div class="swap-label">{{ $t('swap.sell') }}</div>
           <div class="swap-amount-row">
 
-            <input type="number" v-model="amountIn" class="swap-amount-input" placeholder="0.00" />
+            <input type="number" v-model="amountIn" class="swap-amount-input" placeholder="0.00" :disabled="!address"
+              @input="validateAndCorrectAmount" @blur="validateAndCorrectAmount" />
             <div class="swap-token-btn" @click="selIcon(1, fromSymbol)">
               <img :src="fromIcon" alt="">
               <span>{{ fromSymbol }}</span>
@@ -94,24 +95,19 @@
           </span>
 
         </div>
-        <button class="swap-main-btn" @click="sure()"
-          :disabled="isprocess || doSwapprohibitSwap || (amountIn == '') || isestimateQuote || (amountIn >= fromBalance)">
+        <button class="swap-main-btn" v-if="status !== 'connected'" @click="connectWalleted()">
+          {{ $t('swap.connectWallet') }}
+        </button>
+
+        <button class="swap-main-btn" v-else @click="sure()"
+        :disabled="isprocess || doSwapprohibitSwap || !amountIn || isestimateQuote">
           <img src="./loading.svg" alt="" style="width: 30px;
             animation: rotate 5s linear infinite;" v-if="isprocess">
           <span v-else>
             {{ disableReason || $t('swap.doswaps') }}
           </span>
-
-
         </button>
-        <!-- <div style="text-align:left;color:rgb(56, 232, 153);font-size:14px;margin:8px 0;">
-          {{ $t('swap.rate') }}: 1 {{ fromSymbol }} ≈
-          <img src="./loading.svg" alt="" style="width: 25px;
-            animation: rotate 5s linear infinite;" v-if="tofromprocess">
-          <span v-else> {{ rate }}</span>
-          {{ toSymbol }}
-         
-        </div> -->
+
       </div>
     </div>
     <!-- 选择币种弹框 -->
@@ -132,13 +128,18 @@ import cpIcon from "@/assets/coin/cp.svg"
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 // import { getWalletClient } from '@wagmi/core'
-import { readContract,estimateFeesPerGas } from '@wagmi/core'
+import { readContract, estimateFeesPerGas } from '@wagmi/core'
 import { config } from '../../wagmi.ts'
 const { t } = useI18n()
 
+import { useCounterStore } from '@/stores/counter'
+import { storeToRefs } from 'pinia'
 
+// 拿到 store
+const counterStore = useCounterStore()
+const { visible, isLogin } = storeToRefs(counterStore)
 import {
-  useChainId, useConnect, useDisconnect, useAccount, 
+  useChainId, useConnect, useDisconnect, useAccount,
   useWriteContract,
   useReadContract,
   useWaitForTransactionReceipt
@@ -186,12 +187,12 @@ watch(txSuccess, async (success) => {
     console.log('✅ 交易已确认，刷新余额')
     await fetchAllBalancesV6(provider, userAddress.value, allAcconts.value)
     amountIn.value = ''
-  amountOut.value = ''
-  eventBus.emit('custom-event', '发送的数据')
-    ElMessage.success(' Swap succes！')
+    amountOut.value = ''
+    eventBus.emit('custom-event', '发送的数据')
+    ElMessage.success(t('swap.messages.swapSuccess'))
     transactionHash.value = null // 重置状态
     isprocess.value = false
-  }else{
+  } else {
     isprocess.value = false
   }
 })
@@ -240,17 +241,43 @@ const minReceive = ref()
 const trade = ref(null)
 const prohibitReason = ref('')
 const prohibitSwap = computed(() => prohibitReason.value !== '')
+const messages = computed(() => ({
+  approvalSubmitted: t('swap.messages.approvalSubmitted'),
+  userReject: t('swap.messages.userReject'),
+  insufficientFunds: t('swap.messages.insufficientFunds'),
+  slippageTooHigh: t('swap.messages.slippageTooHigh'),
+  swapFail: t('swap.messages.swapFail'),
+
+  // 错误消息
+  userCancelledAuth: t('swap.messages.userCancelledAuth'),
+  userCancelledTransaction: t('swap.messages.userCancelledTransaction'),
+  insufficientBalance: t('swap.messages.insufficientBalance'),
+  slippageError: t('swap.messages.slippageError'),
+  swapFailed: t('swap.messages.swapFailed'),
+  transactionSuccess: t('swap.messages.transactionSuccess'),
+
+  // 错误类型
+  tokenUndefined: t('swap.messages.tokenUndefined'),
+  noValidTrade: t('swap.messages.noValidTrade'),
+  tokenNotDefined: t('swap.messages.tokenNotDefined'),
+  incompleteParams: t('swap.messages.incompleteParams'),
+  invalidSlippage: t('swap.messages.invalidSlippage'),
+  slippageTooLow: t('swap.messages.slippageTooLow'),
+  sameTokenSwap: t('swap.messages.sameTokenSwap'),
+  allowanceError: t('swap.messages.allowanceError')
+}))
+
+
 
 const disableReason = computed(() => {
   const balance = parseFloat(fromBalance.value)
   const inputAmount = parseFloat(amountIn.value)
 
   if (balance <= 0) return t('swap.nofund')
-  if (inputAmount >= balance) {
-    console.log(11)
-    return t('swap.nofund')
-  }
-  // if(amountIn.value=='') return 1
+  if (!amountIn.value || amountIn.value === '') return '' // 空值时不显示错误
+  if (isNaN(inputAmount) || inputAmount <= 0) return '请输入有效金额'
+  if (inputAmount > balance) return t('swap.nofund')
+  
   return ''
 })
 function trimTrailingZeros(valueStr) {
@@ -283,7 +310,54 @@ const fromIcon = computed(() => {
   const acc = allAcconts.value.find(a => a.symbol === fromSymbol.value)
   return acc ? getIconUrl(acc.icon) : ''
 })
+// 验证和修正输入金额
+function validateAndCorrectAmount() {
+  if (!amountIn.value) return
+
+  let value = amountIn.value.toString()
+
+  // 移除非数字字符（除了小数点）
+  value = value.replace(/[^0-9.]/g, '')
+
+  // 确保只有一个小数点（保留第一个，移除后续的）
+  const parts = value.split('.')
+  if (parts.length > 2) {
+    value = parts[0] + '.' + parts[1]
+  }
+
+  // 修复：更精确的前导零处理
+  // 只处理类似 "000123" 或 "01" 这样的情况，但保留 "0.xxx" 格式
+  if (value.match(/^0+[1-9]/)) {
+    // 移除多余的前导零，但保留一个0（如果后面跟着小数点）
+    value = value.replace(/^0+/, '')
+  } else if (value.match(/^0{2,}$/)) {
+    // 多个零的情况，只保留一个
+    value = '0'
+  }
+
+  // 限制小数位数为8位
+  if (value.includes('.')) {
+    const [integer, decimal] = value.split('.')
+    if (decimal && decimal.length > 8) {
+      value = integer + '.' + decimal.substring(0, 8)
+    }
+  }
+
+  // 确保不是负数（这个检查实际上不需要，因为我们已经过滤了非数字字符）
+  if (value && !isNaN(parseFloat(value))) {
+    const numValue = parseFloat(value)
+    if (numValue < 0) {
+      value = '0'
+    }
+  }
+
+  // 如果值发生了变化，更新 amountIn
+  if (value !== amountIn.value) {
+    amountIn.value = value
+  }
+}
 function handleSelect(token) {
+
   const selectedSymbol = token.symbol
   const state = current.value
 
@@ -309,12 +383,21 @@ function handleSelect(token) {
     toSymbol.value = selectedSymbol
   }
 }
+function connectWalleted() {
 
+  if (!address.value) {
+
+    isLogin.value = true
+
+
+  }
+
+}
 function selIcon(state, symbol) {
-
-  tokenModalVisible.value = true
-  current.value = state
-
+  if (address.value) {
+    tokenModalVisible.value = true
+    current.value = state
+  }
 }
 function onSlippageConfirm(newVal) {
   // 这里可以做额外的处理，比如保存、请求等
@@ -357,7 +440,7 @@ function reverseToken() {
   const tempAmount = amountIn.value
   amountIn.value = amountOut.value
   amountOut.value = tempAmount
-  
+
 }
 const amountIn = ref()
 const slippageInput = ref(0.5)
@@ -371,7 +454,7 @@ async function connectWallet() {
   // const injectedProvider = client.transport?.value?.provider
   // if (!injectedProvider) throw new Error('未找到 provider')
 
- 
+
   if (status.value == "connected") {
 
 
@@ -494,7 +577,7 @@ async function sure() {
   // 1️⃣ 检查钱包连接状态
   if (status.value !== 'connected') {
     ElMessage({
-      message: 'Please connect your wallet',
+      message: t('swap.connectWallet'),
       type: 'error',
       duration: 1000,
       showClose: true,
@@ -504,11 +587,11 @@ async function sure() {
   }
 
   // 2️⃣ 合约构造：非原生币才构造 fromTokenContract
-  
+
 
   try {
-   
-    
+
+
     const result = await doSwaps({
       fromToken: fromTokens.value,
       toToken: toTokens.value,
@@ -520,21 +603,22 @@ async function sure() {
       decimals: decimals.value,
       wcpAddress: wethAddress,
       nativeSymbol: 'CP',
-     
+
       setTxHash,
       setApprovalHash,
       useExactApproval: true,
-      chainId:86606
+      chainId: 86606,
+      messages: messages.value
     })
-    
+
     if (result.success) {
-      
+
       // await fetchAllBalancesV6(provider, userAddress.value, allAcconts.value)
     } else {
       isprocess.value = false
       console.error('❌ 交换失败:', result.error)
     }
-    
+
   } catch (error) {
     isprocess.value = false
     console.error('❌ 交换过程中出错:', error)
@@ -542,9 +626,9 @@ async function sure() {
     // isSwapping.value = false
   }
   // 3️⃣ 调用 swap
- 
-  
- 
+
+
+
 }
 
 watch(
@@ -554,8 +638,12 @@ watch(
       connectWallet()
     }
     if (newStatus === "disconnected") {
+
       amountIn.value = ''
       amountOut.value = ''
+      allAcconts.value.forEach(account => {
+        account.blance = 0
+      })
     }
   }
 )

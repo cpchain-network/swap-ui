@@ -31,13 +31,18 @@
                 </div>
 
                 <div class="swap-row">
+                  
                     <div class="top">
                         <img :src="fromIcon" alt="" class="icons">
                         <div class="name">{{ fromSymbol }}</div>
                     </div>
                     <div class="middle">
-                        <input type="number" class="swap-amount-input" v-model.trim="amountIn" @input="onAmountInChange"
-                            :disabled="isCalculating" placeholder="0.0">
+                    
+                        <input type="number" class="swap-amount-input" v-model.trim="amountIn" 
+                         @input="onAmountInChange"
+    @keypress="onKeyPress"
+    @blur="onBlur('INPUT')"
+                            :disabled="address==undefined||isCalculating" placeholder="0.0">
                         <div v-if="isCalculating && independentField === 'INPUT'" class="calculating-indicator">
                             {{ $t('liquidity.Calculat') }}...
                         </div>
@@ -60,8 +65,11 @@
                         <div class="name">{{ toSymbol }}</div>
                     </div>
                     <div class="middle">
-                        <input type="number" class="swap-amount-input" v-model.trim="amountOut" @input="onAmountOutChange"
-                            :disabled="isCalculating" placeholder="0.0">
+                        <input type="number" class="swap-amount-input" v-model.trim="amountOut" 
+                         @input="onAmountOutChange"
+    @keypress="onKeyPress"
+    @blur="onBlur('OUTPUT')"
+                        :disabled="address==undefined||isCalculating"  placeholder="0.0">
                         <div v-if="isCalculating && independentField === 'OUTPUT'" class="calculating-indicator">
                             {{ $t('liquidity.Calculat') }}...
                         </div>
@@ -101,8 +109,10 @@
                         </svg>
                     </span>
                 </div>
-
-                <button class="swap-main-btn" @click="sure()" :disabled="isProcess||!canAddLiquidity">
+                <button class="swap-main-btn" v-if="!address" @click="connectWalleted()">
+                    {{ buttonText }}
+                </button>
+                <button class="swap-main-btn" @click="sure()" :disabled="isProcess || !canAddLiquidity" v-else>
                     {{ buttonText }}
                 </button>
             </div>
@@ -232,14 +242,19 @@ import { getPoolReserves, getSdkToken, isPairAvailable, getPairAddress } from '.
 import doAddLiquidity from './doAddLiquidity.js'
 import { doRemoveLiquidity } from './doRemoveLiquidity.js'
 import { useI18n } from 'vue-i18n'
+import { useCounterStore } from '@/stores/counter'
+import { storeToRefs } from 'pinia'
 
+// 拿到 store
+const counterStore = useCounterStore()
+const { visible, isLogin } = storeToRefs(counterStore)
 const { t } = useI18n()
 const { connect, connectors, error } = useConnect();
 const { address, status } = useAccount()
 const current = ref()
 const showRemoveModal = ref(false)
 const lpBalance = ref(0)
-const  isProcess = ref(false)
+const isProcess = ref(false)
 const selItem = ref({})
 const ROUTER_ADDRESS = '0x4cFBbe212366bf31DF01F5188d759c738a757509' // Uniswap V2 Router
 const WRAPPED_CP_ADDRESS = '0xC18eA88732464dc5E38372A7Fb1d30b56Dd0E4d5' // WETH 地
@@ -258,7 +273,95 @@ onMounted(async () => {
 
 })
 
+const MESSAGE_FIELDS = computed(() => ({
+  // 基础进度提示
+  progress_start: t('liquidity.MESSAGE_FIELDS.progress_start'),
+  progress_validation: t('liquidity.MESSAGE_FIELDS.progress_validation'),
+  progress_approval: t('liquidity.MESSAGE_FIELDS.progress_approval'),
+  progress_transaction: t('liquidity.MESSAGE_FIELDS.progress_transaction'),
+  progress_pending: t('liquidity.MESSAGE_FIELDS.progress_pending'),
+  progress_success: t('liquidity.MESSAGE_FIELDS.progress_success'),
+  progress_error: t('liquidity.MESSAGE_FIELDS.progress_error'),
 
+  // 流动性池检查
+  progress_pool_check_exists: t('liquidity.MESSAGE_FIELDS.progress_pool_check_exists'),
+  progress_pool_check_new: t('liquidity.MESSAGE_FIELDS.progress_pool_check_new'),
+
+  // 授权相关进度
+  approval_check: t('liquidity.MESSAGE_FIELDS.approval_check'),
+  approval_pending: t('liquidity.MESSAGE_FIELDS.approval_pending'),
+  approval_confirming: t('liquidity.MESSAGE_FIELDS.approval_confirming'),
+  approval_success: t('liquidity.MESSAGE_FIELDS.approval_success'),
+  approval_sufficient: t('liquidity.MESSAGE_FIELDS.approval_sufficient'),
+  approval_error: t('liquidity.MESSAGE_FIELDS.approval_error'),
+
+  // ElMessage 提示信息
+  authorization_submitted: t('liquidity.MESSAGE_FIELDS.authorization_submitted'),
+  authorization_success: t('liquidity.MESSAGE_FIELDS.authorization_success'),
+  liquidity_added_success: t('liquidity.MESSAGE_FIELDS.liquidity_added_success'),
+
+  // 错误消息
+  error_authorization_canceled: t('liquidity.MESSAGE_FIELDS.error_authorization_canceled'),
+  error_authorization_failed: t('liquidity.MESSAGE_FIELDS.error_authorization_failed'),
+  error_insufficient_token_balance: t('liquidity.MESSAGE_FIELDS.error_insufficient_token_balance'),
+  error_transaction_failed: t('liquidity.MESSAGE_FIELDS.error_transaction_failed'),
+  error_user_canceled: t('liquidity.MESSAGE_FIELDS.error_user_canceled'),
+  error_insufficient_balance: t('liquidity.MESSAGE_FIELDS.error_insufficient_balance'),
+  error_insufficient_a_amount: t('liquidity.MESSAGE_FIELDS.error_insufficient_a_amount'),
+  error_insufficient_b_amount: t('liquidity.MESSAGE_FIELDS.error_insufficient_b_amount'),
+  error_expired: t('liquidity.MESSAGE_FIELDS.error_expired'),
+  error_identical_addresses: t('liquidity.MESSAGE_FIELDS.error_identical_addresses'),
+  error_zero_address: t('liquidity.MESSAGE_FIELDS.error_zero_address'),
+  error_timeout: t('liquidity.MESSAGE_FIELDS.error_timeout'),
+  error_gas_estimation: t('liquidity.MESSAGE_FIELDS.error_gas_estimation')
+}))
+
+const MESSAGE_FIELDS2 = computed(() => ({
+  // 基础进度提示
+  startProgress: t('liquidity.MESSAGE_FIELDS2.startProgress'),
+  validationProgress: t('liquidity.MESSAGE_FIELDS2.validationProgress'),
+  poolInfoProgress: t('liquidity.MESSAGE_FIELDS2.poolInfoProgress'),
+  approvalProgress: t('liquidity.MESSAGE_FIELDS2.approvalProgress'),
+  transactionProgress: t('liquidity.MESSAGE_FIELDS2.transactionProgress'),
+  pendingProgress: t('liquidity.MESSAGE_FIELDS2.pendingProgress'),
+  successProgress: t('liquidity.MESSAGE_FIELDS2.successProgress'),
+  errorProgress: t('liquidity.MESSAGE_FIELDS2.errorProgress'),
+
+  // 参数验证相关
+  incompleteParams: t('liquidity.MESSAGE_FIELDS2.incompleteParams'),
+  incompleteTokenInfo: t('liquidity.MESSAGE_FIELDS2.incompleteTokenInfo'),
+  invalidLPAmount: t('liquidity.MESSAGE_FIELDS2.invalidLPAmount'),
+  invalidSlippage: t('liquidity.MESSAGE_FIELDS2.invalidSlippage'),
+
+  // LP代币余额验证
+  insufficientLPBalance: t('liquidity.MESSAGE_FIELDS2.insufficientLPBalance'),
+
+  // 授权相关进度
+  approvalCheck: t('liquidity.MESSAGE_FIELDS2.approvalCheck'),
+  approvalPending: t('liquidity.MESSAGE_FIELDS2.approvalPending'),
+  approvalSubmitted: t('liquidity.MESSAGE_FIELDS2.approvalSubmitted'),
+  approvalConfirming: t('liquidity.MESSAGE_FIELDS2.approvalConfirming'),
+  approvalSuccess: t('liquidity.MESSAGE_FIELDS2.approvalSuccess'),
+  approvalSuccessProgress: t('liquidity.MESSAGE_FIELDS2.approvalSuccessProgress'),
+  approvalSufficient: t('liquidity.MESSAGE_FIELDS2.approvalSufficient'),
+
+  // ElMessage 提示信息
+  successMessage: t('liquidity.MESSAGE_FIELDS2.successMessage'),
+
+  // 错误消息
+  userCancelledApproval: t('liquidity.MESSAGE_FIELDS2.userCancelledApproval'),
+  approvalFailed: t('liquidity.MESSAGE_FIELDS2.approvalFailed'),
+  approvalError: t('liquidity.MESSAGE_FIELDS2.approvalError'),
+  transactionFailed: t('liquidity.MESSAGE_FIELDS2.transactionFailed'),
+  userCancelled: t('liquidity.MESSAGE_FIELDS2.userCancelled'),
+  insufficientBalance: t('liquidity.MESSAGE_FIELDS2.insufficientBalance'),
+  insufficientLiquidity: t('liquidity.MESSAGE_FIELDS2.insufficientLiquidity'),
+  insufficientAmountA: t('liquidity.MESSAGE_FIELDS2.insufficientAmountA'),
+  insufficientAmountB: t('liquidity.MESSAGE_FIELDS2.insufficientAmountB'),
+  transactionExpired: t('liquidity.MESSAGE_FIELDS2.transactionExpired'),
+  transactionTimeout: t('liquidity.MESSAGE_FIELDS2.transactionTimeout'),
+  gasEstimationFailed: t('liquidity.MESSAGE_FIELDS2.gasEstimationFailed')
+}))
 const allAcconts = ref([
     {
         symbol: 'CP', decimals: 18, token:
@@ -335,7 +438,7 @@ const canAddLiquidity = computed(() => {
     if (parseFloat(amountIn.value) <= 0 || parseFloat(amountOut.value) <= 0) return false
     if (parseFloat(amountIn.value) > parseFloat(fromBalance.value)) return false
     if (parseFloat(amountOut.value) > parseFloat(toBalance.value)) return false
-    
+
     return true
 })
 
@@ -355,6 +458,17 @@ const ERC20_ABI = [
     "function allowance(address owner, address spender) view returns (uint256)",
     "function approve(address spender, uint256 amount) returns (bool)"
 ]
+
+function connectWalleted() {
+
+    if (!address.value) {
+
+        isLogin.value = true
+
+
+    }
+
+}
 function del(item) {
     showRemoveModal.value = true
     lpBalance.value = item.lptokenNum
@@ -448,20 +562,162 @@ const debouncedCalculateFromOutput = debounce((amount) => {
 }, 500)
 
 // 输入监听函数
-function onAmountInChange() {
+// function onAmountInChange() {
+//     if (independentField.value !== 'INPUT') {
+//         independentField.value = 'INPUT'
+//     }
+//     debouncedCalculateFromInput(amountIn.value)
+// }
+
+// function onAmountOutChange() {
+//     if (independentField.value !== 'OUTPUT') {
+//         independentField.value = 'OUTPUT'
+//     }
+//     debouncedCalculateFromOutput(amountOut.value)
+// }
+// 数字输入验证函数
+function validateAndCorrectAmount(value) {
+    if (!value) return ''
+    
+    let correctedValue = value.toString()
+    
+    // 1. 移除非数字字符（除了小数点）
+    correctedValue = correctedValue.replace(/[^0-9.]/g, '')
+    
+    // 2. 确保只有一个小数点
+    const parts = correctedValue.split('.')
+    if (parts.length > 2) {
+        correctedValue = parts[0] + '.' + parts.slice(1).join('')
+    }
+    
+    // 3. 处理前导零
+    if (correctedValue.match(/^0+[1-9]/)) {
+        correctedValue = correctedValue.replace(/^0+/, '')
+    } else if (correctedValue.match(/^0{2,}$/)) {
+        correctedValue = '0'
+    }
+    
+    // 4. 限制小数位数为8位
+    if (correctedValue.includes('.')) {
+        const [integer, decimal] = correctedValue.split('.')
+        if (decimal && decimal.length > 8) {
+            correctedValue = integer + '.' + decimal.substring(0, 8)
+        }
+    }
+    
+    // 5. 确保不是负数
+    if (correctedValue && !isNaN(parseFloat(correctedValue))) {
+        const numValue = parseFloat(correctedValue)
+        if (numValue < 0) {
+            correctedValue = '0'
+        }
+    }
+    
+    // 6. 处理空字符串或无效输入
+    if (correctedValue === '' || correctedValue === '.' || isNaN(parseFloat(correctedValue))) {
+        return ''
+    }
+    
+    return correctedValue
+}
+
+// 改进的输入监听函数
+function onAmountInChange(event) {
+    // 获取原始输入值
+    const rawValue = event?.target?.value || amountIn.value
+    
+    // 验证和修正输入
+    const correctedValue = validateAndCorrectAmount(rawValue)
+    
+    // 如果值发生了变化，更新输入框
+    if (correctedValue !== amountIn.value) {
+        amountIn.value = correctedValue
+    }
+    
+    // 设置独立字段标识
     if (independentField.value !== 'INPUT') {
         independentField.value = 'INPUT'
     }
-    debouncedCalculateFromInput(amountIn.value)
+    
+    // 如果输入为空或0，清空对应的输出
+    if (!correctedValue || correctedValue === '0') {
+        amountOut.value = ''
+        return
+    }
+    
+    // 触发计算
+    debouncedCalculateFromInput(correctedValue)
 }
 
-function onAmountOutChange() {
+function onAmountOutChange(event) {
+    // 获取原始输入值
+    const rawValue = event?.target?.value || amountOut.value
+    
+    // 验证和修正输入
+    const correctedValue = validateAndCorrectAmount(rawValue)
+    
+    // 如果值发生了变化，更新输入框
+    if (correctedValue !== amountOut.value) {
+        amountOut.value = correctedValue
+    }
+    
+    // 设置独立字段标识
     if (independentField.value !== 'OUTPUT') {
         independentField.value = 'OUTPUT'
     }
-    debouncedCalculateFromOutput(amountOut.value)
+    
+    // 如果输入为空或0，清空对应的输入
+    if (!correctedValue || correctedValue === '0') {
+        amountIn.value = ''
+        return
+    }
+    
+    // 触发计算
+    debouncedCalculateFromOutput(correctedValue)
 }
 
+// 添加键盘事件处理，防止输入非法字符
+function onKeyPress(event) {
+    const char = String.fromCharCode(event.which)
+    // 只允许数字和小数点
+    if (!/[0-9.]/.test(char)) {
+        event.preventDefault()
+    }
+    
+    // 防止输入多个小数点
+    const currentValue = event.target.value
+    if (char === '.' && currentValue.includes('.')) {
+        event.preventDefault()
+    }
+}
+
+// 失焦时的最终验证
+function onBlur(field) {
+    const value = field === 'INPUT' ? amountIn.value : amountOut.value
+    
+    if (!value) return
+    
+    const numValue = parseFloat(value)
+    
+    // 检查是否为有效数字
+    if (isNaN(numValue) || numValue < 0) {
+        if (field === 'INPUT') {
+            amountIn.value = ''
+        } else {
+            amountOut.value = ''
+        }
+        return
+    }
+    
+    // 格式化数字（移除尾随零）
+    const formattedValue = trimTrailingZeros(numValue.toFixed(8))
+    
+    if (field === 'INPUT') {
+        amountIn.value = formattedValue
+    } else {
+        amountOut.value = formattedValue
+    }
+}
 // 工具函数
 function trimTrailingZeros(valueStr) {
     return String(valueStr).replace(/\.?0+$/, '')
@@ -593,7 +849,20 @@ async function handleRemoveLiquidity(amount) {
             userAddress: address.value,
             routerAddress: ROUTER_ADDRESS,
             wcpAddress: WRAPPED_CP_ADDRESS,
-            nativeSymbol: 'CP'
+            nativeSymbol: 'CP',
+            setTxHash: (hash) => {
+                console.log('交易哈希:', hash)
+                // 可以在这里更新UI显示交易哈希
+            },
+            setApprovalHash: (hash) => {
+                console.log('授权哈希:', hash)
+                // 可以在这里更新UI显示授权哈希
+            },
+            onProgress: (stage, message, data) => {
+                console.log(`进度更新 [${stage}]:`, message, data)
+                // 可以在这里更新UI显示进度
+            },
+            messages: MESSAGE_FIELDS2.value // 传入国际化消息对象
         }
 
         console.log('删除流动性参数:', removeParams)
@@ -656,8 +925,8 @@ async function fetchAllBalancesV6(provider, address, tokenList) {
 async function sure() {
     if (!canAddLiquidity.value) return
 
-    try { 
-        isProcess.value=true
+    try {
+        isProcess.value = true
         // 获取代币信息
         const fromToken = allAcconts.value.find(acc => acc.symbol === fromSymbol.value)
         const toToken = allAcconts.value.find(acc => acc.symbol === toSymbol.value)
@@ -727,7 +996,8 @@ async function sure() {
                 console.log('Approval hash:', hash)
                 // 可以在这里更新 UI 显示授权哈希
             },
-            onProgress
+            onProgress,
+            messages: MESSAGE_FIELDS.value,  // 传入
         })
 
         console.log('添加流动性结果:', result)
@@ -748,7 +1018,7 @@ async function sure() {
             throw new Error(result.error || '添加流动性失败')
         }
 
-        isProcess.value=false
+        isProcess.value = false
 
     } catch (error) {
         console.error('添加流动性失败:', error)
@@ -770,7 +1040,7 @@ async function sure() {
         } else if (error.message) {
             errorMessage = error.message
         }
-        isProcess.value=false
+        isProcess.value = false
         // alert(errorMessage)
     }
 }
@@ -787,6 +1057,10 @@ watch(
             amountOut.value = ''
             connected.value = false
             poolStatus.value = ''
+            allAcconts.value.forEach(account => {
+                account.blance = 0
+            })
+            userBalances1.value=[]
         }
     }
 )

@@ -1,5 +1,3 @@
-
-// export default doRemoveLiquidity
 import { parseUnits, formatUnits, encodeFunctionData } from 'viem'
 import { ElMessage } from 'element-plus'
 import { readContract, estimateFeesPerGas, estimateGas, writeContract, waitForTransactionReceipt } from '@wagmi/core'
@@ -169,7 +167,7 @@ const pairAbi = [
 ]
 
 /**
- * Gas estimation function
+ * Gas estimation function with 20% buffer
  * @param {Array} abi - Contract ABI
  * @param {string} functionName - Function name
  * @param {Array} args - Function parameters
@@ -197,13 +195,16 @@ async function computedGas(abi, functionName, args, to, account, value = undefin
       value
     })
 
+    // 3. Add 20% buffer to gas estimate
+    const gasWithBuffer = (gasEstimate * 120n) / 100n
+
     const result = {
-      gas: gasEstimate,
+      gas: gasWithBuffer,
       maxFeePerGas: feeData.maxFeePerGas,
       maxPriorityFeePerGas: feeData.maxPriorityFeePerGas
     }
 
-    console.log('⛽ Gas estimate:', result)
+    console.log('⛽ Gas estimate with 20% buffer:', result)
     return result
   } catch (error) {
     console.error('❌ Gas estimation failed:', error)
@@ -320,12 +321,13 @@ function calculateRemoveAmounts(liquidity, totalSupply, reserve0, reserve1) {
  * @param {bigint} amount - Amount to approve
  * @param {Function} setApprovalHash - Callback to set approval hash
  * @param {Function} onProgress - Progress callback
+ * @param {Object} messages - Message object for internationalization
  * @returns {Promise<Object>} Approval result
  */
-async function checkAndApproveLPToken(pairAddress, userAddress, routerAddress, amount, setApprovalHash, onProgress) {
+async function checkAndApproveLPToken(pairAddress, userAddress, routerAddress, amount, setApprovalHash, onProgress, messages) {
   try {
     console.log('🔍 Checking LP Token allowance...')
-    onProgress && onProgress('approval_check', 'Checking LP Token approval status...')
+    onProgress && onProgress('approval_check', messages?.approvalCheck || 'Checking LP Token approval status...')
     
     // 1. Check current allowance
     const allowanceResult = await readContract(config, {
@@ -347,7 +349,7 @@ async function checkAndApproveLPToken(pairAddress, userAddress, routerAddress, a
     // 2. If allowance is insufficient, approve
     if (allowance < amountBN) {
       console.log('📝 Submitting LP Token approval for:', amountBN.toString())
-      onProgress && onProgress('approval_pending', 'Approving LP Token...')
+      onProgress && onProgress('approval_pending', messages?.approvalPending || 'Approving LP Token...')
 
       // 3. Estimate gas for approval transaction
       const approveGasEstimate = await computedGas(
@@ -374,13 +376,13 @@ async function checkAndApproveLPToken(pairAddress, userAddress, routerAddress, a
 
       // Show approval notification
       ElMessage({
-        message: 'LP Token approval submitted, waiting for confirmation...',
+        message: messages?.approvalSubmitted || 'LP Token approval submitted, waiting for confirmation...',
         type: 'info',
         duration: 3000,
         showClose: true
       })
 
-      onProgress && onProgress('approval_confirming', 'Waiting for LP Token approval confirmation...')
+      onProgress && onProgress('approval_confirming', messages?.approvalConfirming || 'Waiting for LP Token approval confirmation...')
 
       // Wait for approval transaction confirmation
       console.log('⏳ Waiting for LP Token approval confirmation...')
@@ -395,46 +397,30 @@ async function checkAndApproveLPToken(pairAddress, userAddress, routerAddress, a
 
       console.log('✅ LP Token approval confirmed:', approvalReceipt.transactionHash)
       ElMessage({
-        message: 'LP Token approval confirmed successfully',
+        message: messages?.approvalSuccess || 'LP Token approval confirmed successfully',
         type: 'success',
         duration: 2000
       })
 
-      onProgress && onProgress('approval_success', 'LP Token approval successful')
+      onProgress && onProgress('approval_success', messages?.approvalSuccessProgress || 'LP Token approval successful')
 
       return { approved: true, hash: approveHash }
     }
 
-    onProgress && onProgress('approval_sufficient', 'LP Token allowance sufficient, no re-approval needed')
+    onProgress && onProgress('approval_sufficient', messages?.approvalSufficient || 'LP Token allowance sufficient, no re-approval needed')
     return { approved: false, hash: null }
   } catch (error) {
     console.error('❌ LP Token approval error:', error)
-    onProgress && onProgress('approval_error', `LP Token approval failed: ${error.message}`)
+    onProgress && onProgress('approval_error', `${messages?.approvalError || 'LP Token approval failed'}: ${error.message}`)
     
     if (error.message && error.message.includes('User rejected')) {
-      throw new Error('User cancelled the approval operation')
+      throw new Error(messages?.userCancelledApproval || 'User cancelled the approval operation')
     }
-    throw new Error('LP Token approval failed: ' + (error.message || error))
+    throw new Error(`${messages?.approvalFailed || 'LP Token approval failed'}: ${error.message || error}`)
   }
 }
 
-/**
- * Remove liquidity main function
- * @param {Object} params - Parameter object
- * @param {Object} params.tokenA - TokenA object (includes address, symbol, decimals)
- * @param {Object} params.tokenB - TokenB object (includes address, symbol, decimals)
- * @param {string} params.pairAddress - LP Token contract address
- * @param {string} params.liquidityAmount - LP Token amount (user input format)
- * @param {number} params.slippageInput - Slippage tolerance (percentage, e.g., 0.5 means 0.5%)
- * @param {string} params.userAddress - User wallet address
- * @param {string} params.routerAddress - Router contract address
- * @param {string} params.wcpAddress - Wrapped CP address
- * @param {string} [params.nativeSymbol='CP'] - Native coin symbol
- * @param {Function} [params.setTxHash] - Callback to set transaction hash
- * @param {Function} [params.setApprovalHash] - Callback to set approval hash
- * @param {Function} [params.onProgress] - Progress callback function
- * @returns {Promise<Object>} Transaction result
- */
+
 export async function doRemoveLiquidity({
   tokenA,
   tokenB,
@@ -447,7 +433,8 @@ export async function doRemoveLiquidity({
   nativeSymbol = 'CP',
   setTxHash,
   setApprovalHash,
-  onProgress
+  onProgress,
+  messages
 }) {
   let txHash = null
   let error = null
@@ -463,12 +450,12 @@ export async function doRemoveLiquidity({
 
   try {
     console.log('🚀 Starting remove liquidity process...')
-    updateProgress('start', 'Starting remove liquidity...')
+    updateProgress('start', messages?.startProgress || 'Starting remove liquidity...')
 
     // 1. Parameter validation
-    if (!userAddress || !routerAddress || !pairAddress) throw new Error('Incomplete parameters')
-    if (!tokenA || !tokenB) throw new Error('Incomplete token information')
-    if (!liquidityAmount || liquidityAmount === '0') throw new Error('Please enter a valid LP Token amount')
+    if (!userAddress || !routerAddress || !pairAddress) throw new Error(messages?.incompleteParams || 'Incomplete parameters')
+    if (!tokenA || !tokenB) throw new Error(messages?.incompleteTokenInfo || 'Incomplete token information')
+    if (!liquidityAmount || liquidityAmount === '0') throw new Error(messages?.invalidLPAmount || 'Please enter a valid LP Token amount')
 
     console.log('📋 Remove liquidity params:', {
       tokenA: { symbol: tokenA.symbol, address: tokenA.address },
@@ -483,7 +470,7 @@ export async function doRemoveLiquidity({
     // 2. Slippage calculation and validation
     const slippageBN = BigInt(Math.floor(slippageInput * 100)) // Convert to basis points
     if (slippageBN < 1n || slippageBN > 5000n) { // 0.01% to 50%
-      throw new Error('Invalid slippage setting, please set between 0.01% and 50%')
+      throw new Error(messages?.invalidSlippage || 'Invalid slippage setting, please set between 0.01% and 50%')
     }
 
     console.log('📊 Slippage settings:', {
@@ -499,7 +486,7 @@ export async function doRemoveLiquidity({
     })
 
     // 4. Check LP Token balance
-    updateProgress('validation', 'Validating LP Token balance...')
+    updateProgress('validation', messages?.validationProgress || 'Validating LP Token balance...')
     
     const balanceCheck = await checkLPTokenBalance(
       pairAddress,
@@ -508,11 +495,11 @@ export async function doRemoveLiquidity({
     )
 
     if (!balanceCheck) {
-      throw new Error('Insufficient LP Token balance')
+      throw new Error(messages?.insufficientLPBalance || 'Insufficient LP Token balance')
     }
 
     // 5. Get liquidity pool information
-    updateProgress('pool_info', 'Getting liquidity pool information...')
+    updateProgress('pool_info', messages?.poolInfoProgress || 'Getting liquidity pool information...')
     
     const [poolReserves, totalSupply] = await Promise.all([
       getPoolReserves(pairAddress),
@@ -591,7 +578,7 @@ export async function doRemoveLiquidity({
     })
 
     // 11. Check and approve LP Token
-    updateProgress('approval', 'Checking LP Token approval...')
+    updateProgress('approval', messages?.approvalProgress || 'Checking LP Token approval...')
 
     const approvalResult = await checkAndApproveLPToken(
       pairAddress,
@@ -599,7 +586,8 @@ export async function doRemoveLiquidity({
       routerAddress,
       liquidityParsed,
       setApprovalHash,
-      updateProgress
+      updateProgress,
+      messages
     )
 
     if (approvalResult.approved) {
@@ -607,7 +595,7 @@ export async function doRemoveLiquidity({
       approvalHash = approvalResult.hash
     }
 
-    updateProgress('transaction', 'Submitting remove liquidity transaction...')
+    updateProgress('transaction', messages?.transactionProgress || 'Submitting remove liquidity transaction...')
 
     let hash
 
@@ -702,7 +690,7 @@ export async function doRemoveLiquidity({
     }
 
     // Wait for transaction confirmation
-    updateProgress('pending', 'Waiting for transaction confirmation...', { txHash })
+    updateProgress('pending', messages?.pendingProgress || 'Waiting for transaction confirmation...', { txHash })
     console.log('⏳ Waiting for transaction confirmation:', txHash)
 
     const receipt = await waitForTransactionReceipt(config, {
@@ -711,7 +699,7 @@ export async function doRemoveLiquidity({
     })
 
     if (receipt.status === 'success') {
-      updateProgress('success', 'Transaction confirmed successfully', { 
+      updateProgress('success', messages?.successProgress || 'Transaction confirmed successfully', { 
         txHash,
         expectedAmounts: {
           amountA: formatUnits(amountAExpected, tokenA.decimals),
@@ -723,7 +711,7 @@ export async function doRemoveLiquidity({
       
       // Show success notification
       ElMessage({
-        message: 'Remove liquidity successful!',
+        message: messages?.successMessage || 'Remove liquidity successful!',
         type: 'success',
         duration: 5000,
         showClose: true
@@ -742,33 +730,33 @@ export async function doRemoveLiquidity({
         error: null
       }
     } else {
-      throw new Error('Transaction execution failed')
+      throw new Error(messages?.transactionFailed || 'Transaction execution failed')
     }
 
   } catch (e) {
     console.error('❌ Remove liquidity failed:', e)
     error = e
 
-    updateProgress('error', 'Transaction failed', { error: e.message })
+    updateProgress('error', messages?.errorProgress || 'Transaction failed', { error: e.message })
 
     // Provide more user-friendly error messages
     let errorMessage = e.message
     if (e.message && e.message.includes('User rejected')) {
-      errorMessage = 'User cancelled the transaction'
+      errorMessage = messages?.userCancelled || 'User cancelled the transaction'
     } else if (e.message && e.message.includes('insufficient funds')) {
-      errorMessage = 'Insufficient balance'
+      errorMessage = messages?.insufficientBalance || 'Insufficient balance'
     } else if (e.message && e.message.includes('INSUFFICIENT_LIQUIDITY_BURNED')) {
-      errorMessage = 'Insufficient LP Token amount'
+      errorMessage = messages?.insufficientLiquidity || 'Insufficient LP Token amount'
     } else if (e.message && e.message.includes('INSUFFICIENT_A_AMOUNT')) {
-      errorMessage = 'Insufficient tokenA amount, please adjust slippage'
+      errorMessage = messages?.insufficientAmountA || 'Insufficient tokenA amount, please adjust slippage'
     } else if (e.message && e.message.includes('INSUFFICIENT_B_AMOUNT')) {
-      errorMessage = 'Insufficient tokenB amount, please adjust slippage'
+      errorMessage = messages?.insufficientAmountB || 'Insufficient tokenB amount, please adjust slippage'
     } else if (e.message && e.message.includes('EXPIRED')) {
-      errorMessage = 'Transaction expired, please retry'
+      errorMessage = messages?.transactionExpired || 'Transaction expired, please retry'
     } else if (e.message && e.message.includes('timeout')) {
-      errorMessage = 'Transaction confirmation timeout, please check blockchain explorer'
+      errorMessage = messages?.transactionTimeout || 'Transaction confirmation timeout, please check blockchain explorer'
     } else if (e.message && e.message.includes('Gas estimation failed')) {
-      errorMessage = 'Gas estimation failed, please check network connection or contract address'
+      errorMessage = messages?.gasEstimationFailed || 'Gas estimation failed, please check network connection or contract address'
     }
 
     // Show error notification

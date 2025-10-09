@@ -154,7 +154,7 @@ const erc20Abi = [
 ]
 
 /**
- * Gas estimation function
+ * Gas estimation function with 20% buffer
  * @param {Array} abi - Contract ABI
  * @param {string} functionName - Function name
  * @param {Array} args - Function parameters
@@ -182,17 +182,44 @@ async function computedGas(abi, functionName, args, to, account, value = undefin
       value
     })
 
+    // 3. Add 20% buffer to gas estimate
+    const gasWithBuffer = (gasEstimate * 120n) / 100n
+    const bufferPercentage = 20
+
+    console.log('⛽ Gas estimate with buffer:', {
+      original: gasEstimate.toString(),
+      withBuffer: gasWithBuffer.toString(),
+      bufferPercentage: `${bufferPercentage}%`
+    })
+
     const result = {
-      gas: gasEstimate,
+      gas: gasWithBuffer,
       maxFeePerGas: feeData.maxFeePerGas,
       maxPriorityFeePerGas: feeData.maxPriorityFeePerGas
     }
 
-    console.log('⛽ Gas estimate:', result)
+    console.log('⛽ Final gas estimate:', result)
     return result
   } catch (error) {
     console.error('❌ Gas estimation failed:', error)
-    throw new Error('Gas estimation failed: ' + (error.message || error))
+    
+    // Fallback gas values with 20% buffer
+    const fallbackGas = 300000n * 120n / 100n // 360000 gas with 20% buffer
+    const fallbackMaxFeePerGas = 20000000000n // 20 gwei
+    const fallbackMaxPriorityFeePerGas = 2000000000n // 2 gwei
+    
+    console.log('🔄 Using fallback gas values with 20% buffer:', {
+      gas: fallbackGas.toString(),
+      maxFeePerGas: fallbackMaxFeePerGas.toString(),
+      maxPriorityFeePerGas: fallbackMaxPriorityFeePerGas.toString(),
+      bufferPercentage: '20%'
+    })
+    
+    return {
+      gas: fallbackGas,
+      maxFeePerGas: fallbackMaxFeePerGas,
+      maxPriorityFeePerGas: fallbackMaxPriorityFeePerGas
+    }
   }
 }
 
@@ -294,12 +321,13 @@ async function checkLiquidityPool(factoryAddress, tokenA, tokenB) {
  * @param {bigint} amount - Exact amount to approve
  * @param {Function} setApprovalHash - Callback to set approval hash
  * @param {Function} onProgress - Progress callback
+ * @param {Object} messages - Translation messages object
  * @returns {Promise<Object>} Approval result
  */
-async function checkAndApproveToken(tokenAddress, tokenSymbol, userAddress, routerAddress, amount, setApprovalHash, onProgress) {
+async function checkAndApproveToken(tokenAddress, tokenSymbol, userAddress, routerAddress, amount, setApprovalHash, onProgress, messages = {}) {
   try {
     console.log(`🔍 Checking ${tokenSymbol} allowance...`)
-    onProgress && onProgress('approval_check', `Checking ${tokenSymbol} authorization status...`)
+    onProgress && onProgress('approval_check', messages.approval_check ? `${tokenSymbol} ${messages.approval_check}` : `Checking ${tokenSymbol} authorization status...`)
     
     // 1. Check current allowance
     const allowanceResult = await readContract(config, {
@@ -321,7 +349,7 @@ async function checkAndApproveToken(tokenAddress, tokenSymbol, userAddress, rout
     // 2. If allowance is insufficient, perform exact approval
     if (allowance < amountBN) {
       console.log(`📝 Submitting ${tokenSymbol} exact approval for:`, amountBN.toString())
-      onProgress && onProgress('approval_pending', `Authorizing ${tokenSymbol}...`)
+      onProgress && onProgress('approval_pending', messages.approval_pending ? `${messages.approval_pending} ${tokenSymbol}...` : `Authorizing ${tokenSymbol}...`)
 
       // 3. Estimate gas for approval transaction
       const approveGasEstimate = await computedGas(
@@ -348,13 +376,13 @@ async function checkAndApproveToken(tokenAddress, tokenSymbol, userAddress, rout
 
       // Show approval notification
       ElMessage({
-        message: `${tokenSymbol} Authorization submitted, awaiting confirmation...`,
+        message: messages.authorization_submitted ? `${tokenSymbol} ${messages.authorization_submitted}` : `${tokenSymbol} Authorization submitted, awaiting confirmation...`,
         type: 'info',
         duration: 3000,
         showClose: true
       })
 
-      onProgress && onProgress('approval_confirming', `Waiting for ${tokenSymbol} authorization confirmation...`)
+      onProgress && onProgress('approval_confirming', messages.approval_confirming ? `${messages.approval_confirming} ${tokenSymbol}...` : `Waiting for ${tokenSymbol} authorization confirmation...`)
 
       // 🔥 Wait for approval transaction confirmation
       console.log(`⏳ Waiting for ${tokenSymbol} approval confirmation...`)
@@ -369,26 +397,26 @@ async function checkAndApproveToken(tokenAddress, tokenSymbol, userAddress, rout
 
       console.log(`✅ ${tokenSymbol} approval confirmed:`, approvalReceipt.transactionHash)
       ElMessage({
-        message: `${tokenSymbol} Authorization confirmation successful`,
+        message: messages.authorization_success ? `${tokenSymbol} ${messages.authorization_success}` : `${tokenSymbol} Authorization confirmation successful`,
         type: 'success',
         duration: 2000
       })
 
-      onProgress && onProgress('approval_success', `${tokenSymbol} Authorization confirmation successful`)
+      onProgress && onProgress('approval_success', messages.approval_success ? `${tokenSymbol} ${messages.approval_success}` : `${tokenSymbol} Authorization confirmation successful`)
 
       return { approved: true, hash: approveHash }
     }
 
-    onProgress && onProgress('approval_sufficient', `${tokenSymbol} Sufficient authorization, no need for re-authorization`)
+    onProgress && onProgress('approval_sufficient', messages.approval_sufficient ? `${tokenSymbol} ${messages.approval_sufficient}` : `${tokenSymbol} Sufficient authorization, no need for re-authorization`)
     return { approved: false, hash: null }
   } catch (error) {
     console.error(`❌ ${tokenSymbol} approval error:`, error)
-    onProgress && onProgress('approval_error', `${tokenSymbol} Authorization failed: ${error.message}`)
+    onProgress && onProgress('approval_error', messages.approval_error ? `${tokenSymbol} ${messages.approval_error}: ${error.message}` : `${tokenSymbol} Authorization failed: ${error.message}`)
     
     if (error.message && error.message.includes('User rejected')) {
-      throw new Error('The user canceled the authorization operation')
+      throw new Error(messages.error_authorization_canceled || 'The user canceled the authorization operation')
     }
-    throw new Error(`${tokenSymbol} Authorization failed: ` + (error.message || error))
+    throw new Error(messages.error_authorization_failed ? `${tokenSymbol} ${messages.error_authorization_failed}: ${error.message}` : `${tokenSymbol} Authorization failed: ` + (error.message || error))
   }
 }
 
@@ -441,6 +469,7 @@ function calculatePriceImpact(amountA, amountB, reserveA, reserveB) {
  * @param {Function} [params.setTxHash] - Callback to set transaction hash
  * @param {Function} [params.setApprovalHash] - Callback to set approval hash
  * @param {Function} [params.onProgress] - Progress callback function
+ * @param {Object} [params.messages={}] - Translation messages object
  * @returns {Promise<Object>} Transaction result
  */
 export async function doAddLiquidity({
@@ -455,7 +484,8 @@ export async function doAddLiquidity({
   nativeSymbol = 'CP',
   setTxHash,
   setApprovalHash,
-  onProgress
+  onProgress,
+  messages = {}
 }) {
   let txHash = null
   let error = null
@@ -471,7 +501,7 @@ export async function doAddLiquidity({
 
   try {
     console.log('🚀 Starting add liquidity process...')
-    updateProgress('start', 'Starting to add liquidity...')
+    updateProgress('start', messages.progress_start || 'Starting to add liquidity...')
 
     // 1. Parameter validation
     if (!userAddress || !routerAddress) throw new Error('Incomplete params')
@@ -554,13 +584,16 @@ export async function doAddLiquidity({
         getTokenAddress(tokenB)
       )
       
-      updateProgress('pool_check', poolInfo.exists ? 'Liquidity pool already exists' : 'New liquidity pools will be created', poolInfo)
+      updateProgress('pool_check', poolInfo.exists ? 
+        (messages.progress_pool_check_exists || 'Liquidity pool already exists') : 
+        (messages.progress_pool_check_new || 'New liquidity pools will be created'), 
+        poolInfo)
     } catch (error) {
       console.warn('⚠️ Pool check failed, continuing...', error)
     }
 
     // 9. Balance validation
-    updateProgress('validation', 'Verify token balance...')
+    updateProgress('validation', messages.progress_validation || 'Verify token balance...')
     
     const balanceCheckA = await checkTokenBalance(
       getTokenAddress(tokenA),
@@ -577,10 +610,10 @@ export async function doAddLiquidity({
     )
 
     if (!balanceCheckA) {
-      throw new Error(`${tokenA.symbol} insufficient balance`)
+      throw new Error(messages.error_insufficient_token_balance ? `${tokenA.symbol} ${messages.error_insufficient_token_balance}` : `${tokenA.symbol} insufficient balance`)
     }
     if (!balanceCheckB) {
-      throw new Error(`${tokenB.symbol} insufficient balance`)
+      throw new Error(messages.error_insufficient_token_balance ? `${tokenB.symbol} ${messages.error_insufficient_token_balance}` : `${tokenB.symbol} insufficient balance`)
     }
 
     let hash
@@ -603,7 +636,7 @@ export async function doAddLiquidity({
       })
 
       // 10. Check and approve ERC20 token (exact approval)
-      updateProgress('approval', `Check ${erc20Token.symbol} authorization...`)
+      updateProgress('approval', messages.progress_approval ? `${messages.progress_approval} ${erc20Token.symbol}...` : `Check ${erc20Token.symbol} authorization...`)
 
       const approvalResult = await checkAndApproveToken(
         erc20Token.address,
@@ -612,7 +645,8 @@ export async function doAddLiquidity({
         routerAddress,
         tokenAmount,
         setApprovalHash,
-        updateProgress
+        updateProgress,
+        messages
       )
 
       if (approvalResult.approved) {
@@ -620,7 +654,7 @@ export async function doAddLiquidity({
         approvalHashes.push(approvalResult.hash)
       }
 
-      updateProgress('transaction', 'Submit a transaction to add liquidity...')
+      updateProgress('transaction', messages.progress_transaction || 'Submit a transaction to add liquidity...')
 
       // 11. Execute add liquidity
       console.log('🔄 Submitting add liquidity ETH transaction...')
@@ -679,7 +713,7 @@ export async function doAddLiquidity({
       console.log('🔄 Token approval order:', tokensToApprove.map(t => t.token.symbol))
 
       for (const { token, amount, address } of tokensToApprove) {
-        updateProgress('approval', `Check ${token.symbol} authorization...`)
+        updateProgress('approval', messages.progress_approval ? `${messages.progress_approval} ${token.symbol}...` : `Check ${token.symbol} authorization...`)
 
         const approvalResult = await checkAndApproveToken(
           address,
@@ -688,7 +722,8 @@ export async function doAddLiquidity({
           routerAddress,
           amount,
           setApprovalHash,
-          updateProgress
+          updateProgress,
+          messages
         )
 
         if (approvalResult.approved) {
@@ -697,7 +732,7 @@ export async function doAddLiquidity({
         }
       }
 
-      updateProgress('transaction', 'Submit a transaction to add liquidity...')
+      updateProgress('transaction', messages.progress_transaction || 'Submit a transaction to add liquidity...')
 
       // 13. Execute add liquidity
       console.log('🔄 Submitting add liquidity transaction...')
@@ -734,7 +769,7 @@ export async function doAddLiquidity({
     }
 
     // 🔥 Critical fix: Wait for transaction confirmation
-    updateProgress('pending', 'Waiting for transaction confirmation...', { txHash })
+    updateProgress('pending', messages.progress_pending || 'Waiting for transaction confirmation...', { txHash })
     console.log('⏳ Waiting for transaction confirmation:', txHash)
 
     const receipt = await waitForTransactionReceipt(config, {
@@ -743,7 +778,7 @@ export async function doAddLiquidity({
     })
 
     if (receipt.status === 'success') {
-      updateProgress('success', 'Transaction confirmation successful', { 
+      updateProgress('success', messages.progress_success || 'Transaction confirmation successful', { 
         txHash, 
         priceImpact,
         gasUsed: receipt.gasUsed?.toString()
@@ -752,7 +787,7 @@ export async function doAddLiquidity({
       
       // Show success notification
       ElMessage({
-        message: 'Liquidity added successfully!',
+        message: messages.liquidity_added_success || 'Liquidity added successfully!',
         type: 'success',
         duration: 5000,
         showClose: true
@@ -768,35 +803,35 @@ export async function doAddLiquidity({
         error: null
       }
     } else {
-      throw new Error('Transaction execution failed')
+      throw new Error(messages.error_transaction_failed || 'Transaction execution failed')
     }
 
   } catch (e) {
     console.error('❌ Add liquidity failed:', e)
     error = e
 
-    updateProgress('error', 'Transaction failed', { error: e.message })
+    updateProgress('error', messages.progress_error || 'Transaction failed', { error: e.message })
 
     // Provide more friendly error messages
     let errorMessage = e.message
     if (e.message && e.message.includes('User rejected')) {
-      errorMessage = 'User canceled the transaction'
+      errorMessage = messages.error_user_canceled || 'User canceled the transaction'
     } else if (e.message && e.message.includes('insufficient funds')) {
-      errorMessage = 'Insufficient balance'
+      errorMessage = messages.error_insufficient_balance || 'Insufficient balance'
     } else if (e.message && e.message.includes('INSUFFICIENT_A_AMOUNT')) {
-      errorMessage = 'Insufficient token A amount, please adjust slippage or input amount'
+      errorMessage = messages.error_insufficient_a_amount || 'Insufficient token A amount, please adjust slippage or input amount'
     } else if (e.message && e.message.includes('INSUFFICIENT_B_AMOUNT')) {
-      errorMessage = 'Insufficient token B amount, please adjust slippage or input amount'
+      errorMessage = messages.error_insufficient_b_amount || 'Insufficient token B amount, please adjust slippage or input amount'
     } else if (e.message && e.message.includes('EXPIRED')) {
-      errorMessage = 'Transaction expired, please try again'
+      errorMessage = messages.error_expired || 'Transaction expired, please try again'
     } else if (e.message && e.message.includes('IDENTICAL_ADDRESSES')) {
-      errorMessage = 'Cannot add liquidity for the same token'
+      errorMessage = messages.error_identical_addresses || 'Cannot add liquidity for the same token'
     } else if (e.message && e.message.includes('ZERO_ADDRESS')) {
-      errorMessage = 'Invalid token address'
+      errorMessage = messages.error_zero_address || 'Invalid token address'
     } else if (e.message && e.message.includes('timeout')) {
-      errorMessage = 'Transaction confirmation timeout, please check blockchain explorer'
+      errorMessage = messages.error_timeout || 'Transaction confirmation timeout, please check blockchain explorer'
     } else if (e.message && e.message.includes('Gas estimation failed')) {
-      errorMessage = 'Gas estimation failed, please check network connection or contract address'
+      errorMessage = messages.error_gas_estimation || 'Gas estimation failed, please check network connection or contract address'
     }
 
     // Show error notification

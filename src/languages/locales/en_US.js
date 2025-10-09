@@ -3,7 +3,7 @@ export default {
     titel: "Connect a Wallet",
     exit: "Disconnect"
   },
-  notice:{
+  notice: {
     title: 'Feature Under Development',
     subtitle: 'We are working hard to build new features and bring you an even better experience',
     soon: 'Stay tuned · Exciting things coming soon',
@@ -15,7 +15,7 @@ export default {
       menu: {
         name1: 'Mainnet',
         name2: 'Testnet',
-      
+
       }
     },
     meun2: {
@@ -67,8 +67,8 @@ export default {
       Japanese: "日语"
     },
     link: "Connect",
-    warining:"Multiple wallet extensions detected in your browser. Please keep only one!",
-    add:"Please enable this plugin!"
+    warining: "Multiple wallet extensions detected in your browser. Please keep only one!",
+    add: "Please enable this plugin!"
   },
 
   "blockOne": {
@@ -106,25 +106,25 @@ export default {
     title: "CP Chain Roadmap",
     blockOne: {
       title: "2025 Q3 - Q4",
-      silde:"Infrastructure construction and ecological start-up",
+      silde: "Infrastructure construction and ecological start-up",
       name1: "Mainnet officially launched",
       name2: "Token issuance and transaction support",
       name3: "Launch global node plan ",
       name4: "The first batch of ecological support plan",
-     
+
     },
     blockTwo: {
       title: "2026 Q1 - Q2",
-      silde:"Ecosystem expansion and value capture",
+      silde: "Ecosystem expansion and value capture",
       name1: "Ecological project diversity and continuous growth",
       name2: "Open CEX fee channel and repurchase channel ",
       name3: "Release API/SDK to build developer ecosystem ",
       name4: "Launch decentralized governance mechanism",
 
     },
-    blockThree:{
+    blockThree: {
       title: "2026 Q3 - Future",
-      silde:"Global brands and disruptive applications",
+      silde: "Global brands and disruptive applications",
       // 从网络到市场，释放真实价值
       name1: "Access to mainstream finance and derivatives",
       name2: "Accelerate the implementation of CP Chain in the real industry ",
@@ -168,7 +168,7 @@ export default {
     content1: {
       title: "Network",
       name1: "Mainnet",
-      name2:"Testnet"
+      name2: "Testnet"
     },
     content2: {
       title: "Ecosystem",
@@ -188,7 +188,7 @@ export default {
       name1: "Swap",
       name2: "Faucet",
       name3: "Batch transfer",
-      
+
       name4: "Bridge",
       name5: "Minting",
     }
@@ -210,6 +210,7 @@ export default {
     "sign_out": "sign out"
   },
   swap: {
+    connectWallet: "connect wallet",
     title: "Swap on  CP Chain",
     sell: "Sell",
     buy: "Buy",
@@ -224,34 +225,163 @@ export default {
     searchicons: "Search tokens",
     doswaps: "Swap",
     prohibitReasons: "Amount too large, exceeds pool liquidity",
-    sure: "Confirm"
-    
+    sure: "Confirm",
+    slippagePlaceholder: "slippage (0.000001~50)",
+    invalidNumber: "Please enter a valid number",
+    minimumAllowed: "Minimum is",
+    maximumAllowed: "Maximum is",
+    minimumAllowedEn: "Minimum allowed is",
+    maximumAllowedEn: "Maximum allowed is",
+
+    // doSwap 提示语
+    messages: {
+      // ElMessage 提示语
+      approvalSubmitted: 'Approval submitted, waiting for confirmation...',
+      userReject: 'User Reject!',
+      insufficientFunds: 'Insufficient funds!',
+      slippageTooHigh: 'Slippage too high, try increasing slippage tolerance!',
+      swapFail: 'Swap Fail!',
+      swapSuccess: ' Swap Success!',
+      // 错误消息
+      userCancelledAuth: 'User cancelled the authorization operation',
+      userCancelledTransaction: 'User cancelled the transaction operation',
+      insufficientBalance: 'Insufficient balance',
+      slippageError: 'Slippage too high, please increase slippage tolerance',
+      swapFailed: 'Swap failed: Please try again later!',
+      transactionSuccess: 'Transaction submitted successfully',
+
+      // 错误类型
+      tokenUndefined: 'Token undefined',
+      noValidTrade: 'No valid Trade object',
+      tokenNotDefined: 'Token not defined',
+      incompleteParams: 'Incomplete params',
+      invalidSlippage: 'Invalid slippage input',
+      slippageTooLow: 'Slippage too low, may cause transaction to revert',
+      sameTokenSwap: 'swap not allowed',
+      allowanceError: 'Failed to check/set allowance: '
+    },
+
+
   },
-  liquidity:{
-    delliquidity:"Remove liquidity",
-    confirmdel:"Confirm Delete",
-    link:"Connect Wallet",
-    Insufficient:"Insufficient balance",
-    create:"Create a pool and add liquidity",
-    title :"Adding V2 liquidity",
-    balance:"Balance",
-    enter:"Please enter the amount",
-    Calculat:"Calculating",
-    position:"My Position",
-    pool:"Pool",
-    token0:"token0",
-    token1:"token1",
-    APR:"APR",
-    TVL:"TVL",
-    USERblance:"UserBalance",
-    Token0deposit:"Token0 deposit",
-    Token1deposit:"Token01 deposit",
-    PoolPercentage:"Pool Percentage",
-    operate:"operate",
-    del:"delete",
-    newCretate:"You will create a new liquidity pool !",
-    addCreate:"The pool already exists, add liquidity at the current ratio!",
-    errorCreate:"Failed to obtain pool information, please check the network connection!"
+  liquidity: {
+    delliquidity: "Remove liquidity",
+    confirmdel: "Confirm Delete",
+    link: "Connect Wallet",
+    Insufficient: "Insufficient balance",
+    create: "Create a pool and add liquidity",
+    title: "Adding V2 liquidity",
+    balance: "Balance",
+    enter: "Please enter the amount",
+    Calculat: "Calculating",
+    position: "My Position",
+    pool: "Pool",
+    token0: "token0",
+    token1: "token1",
+    APR: "APR",
+    TVL: "TVL",
+    USERblance: "UserBalance",
+    Token0deposit: "Token0 deposit",
+    Token1deposit: "Token01 deposit",
+    PoolPercentage: "Pool Percentage",
+    operate: "operate",
+    del: "delete",
+    newCretate: "You will create a new liquidity pool !",
+    addCreate: "The pool already exists, add liquidity at the current ratio!",
+    errorCreate: "Failed to obtain pool information, please check the network connection!",
+    MESSAGE_FIELDS: {
+      // Basic progress messages
+      progress_start: 'Starting to add liquidity...',
+      progress_validation: 'Validating token balances...',
+      progress_approval: 'Checking authorization...',
+      progress_transaction: 'Submitting add liquidity transaction...',
+      progress_pending: 'Waiting for transaction confirmation...',
+      progress_success: 'Transaction confirmed successfully',
+      progress_error: 'Transaction failed',
+
+      // Liquidity pool checks
+      progress_pool_check_exists: 'Liquidity pool already exists',
+      progress_pool_check_new: 'Will create new liquidity pool',
+
+      // Authorization related progress
+      approval_check: 'Authorization status check',
+      approval_pending: 'Authorization pending',
+      approval_confirming: 'Waiting for authorization confirmation',
+      approval_success: 'Authorization confirmed successfully',
+      approval_sufficient: 'Authorization allowance sufficient, no re-authorization needed',
+      approval_error: 'Authorization failed',
+
+      // ElMessage notifications
+      authorization_submitted: 'Authorization submitted, waiting for confirmation...',
+      authorization_success: 'Authorization confirmed successfully',
+      liquidity_added_success: 'Liquidity added successfully!',
+
+      // Error messages
+      error_authorization_canceled: 'User cancelled the authorization operation',
+      error_authorization_failed: 'Authorization failed',
+      error_insufficient_token_balance: 'Insufficient balance',
+      error_transaction_failed: 'Transaction execution failed',
+      error_user_canceled: 'User cancelled the transaction',
+      error_insufficient_balance: 'Insufficient balance',
+      error_insufficient_a_amount: 'Insufficient tokenA amount, please adjust slippage or input amount',
+      error_insufficient_b_amount: 'Insufficient tokenB amount, please adjust slippage or input amount',
+      error_expired: 'Transaction expired, please retry',
+      error_identical_addresses: 'Cannot add liquidity for the same token',
+      error_zero_address: 'Invalid token address',
+      error_timeout: 'Transaction confirmation timeout, please check blockchain explorer',
+      error_gas_estimation: 'Gas estimation failed, please check network connection or contract address'
+    },
+    MESSAGE_FIELDS2: {
+      // Basic progress messages
+      startProgress: 'Starting to remove liquidity...',
+      validationProgress: 'Validating parameters...',
+      poolInfoProgress: 'Getting liquidity pool information...',
+      approvalProgress: 'Checking LP token authorization...',
+      transactionProgress: 'Submitting remove liquidity transaction...',
+      pendingProgress: 'Waiting for transaction confirmation...',
+      successProgress: 'Transaction confirmed successfully',
+      errorProgress: 'Transaction failed',
+
+      // Parameter validation related
+      incompleteParams: 'Incomplete parameters',
+      incompleteTokenInfo: 'Incomplete token information',
+      invalidLPAmount: 'Please enter a valid LP token amount',
+      invalidSlippage: 'Invalid slippage setting, please set between 0.01% and 50%',
+
+      // LP token balance validation
+      insufficientLPBalance: 'Insufficient LP token balance',
+
+      // Authorization related progress
+      approvalCheck: 'Checking LP token authorization status...',
+      approvalPending: 'LP token authorization pending...',
+      approvalSubmitted: 'LP token authorization submitted, waiting for confirmation...',
+      approvalConfirming: 'Confirming LP token authorization...',
+      approvalSuccess: 'LP token authorization confirmed successfully',
+      approvalSuccessProgress: 'LP token authorization successful',
+      approvalSufficient: 'LP token authorization sufficient, no re-authorization needed',
+
+      // ElMessage notifications
+      successMessage: 'Remove liquidity successful!',
+
+      // Error messages
+      userCancelledApproval: 'User cancelled the approval operation',
+      approvalFailed: 'LP token approval failed',
+      approvalError: 'LP token approval error',
+      transactionFailed: 'Transaction execution failed',
+      userCancelled: 'User cancelled the transaction',
+      insufficientBalance: 'Insufficient balance',
+      insufficientLiquidity: 'Insufficient LP token amount',
+      insufficientAmountA: 'Insufficient tokenA amount, please adjust slippage',
+      insufficientAmountB: 'Insufficient tokenB amount, please adjust slippage',
+      transactionExpired: 'Transaction expired, please retry',
+      transactionTimeout: 'Transaction confirmation timeout, please check blockchain explorer',
+      gasEstimationFailed: 'Gas estimation failed, please check network connection or contract address'
+    },
+    removeModel: {
+      exceedsMaxBalance: 'Exceeds maximum balance',
+      amountCannotBeNegative: 'Amount cannot be negative',
+      pleaseEnterValidAmount: 'Please enter a valid LP Token amount',
+      amountMustBeGreaterThanZero: 'LP Token amount must be greater than 0'
+    }
   }
-  
+
 };

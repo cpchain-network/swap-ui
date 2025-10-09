@@ -24,12 +24,12 @@ const TOKEN_LIST = {
 }
 
 // ✅ 获取 SDK Token 实例
+
 function getSdkToken(symbol) {
   const token = TOKEN_LIST[symbol]
   if (!token) throw new Error(`Token ${symbol} not found`)
-  return token.isNative ? TOKEN_LIST.WCP : token
+  return token.isNative ? TOKEN_LIST.WCP : token  // 🚨 问题在这里！
 }
-
 // ✅ 计算 pair 地址（适配自定义工厂）
 function getPairAddress({ tokenA, tokenB }) {
   const [token0, token1] = tokenA.sortsBefore(tokenB)
